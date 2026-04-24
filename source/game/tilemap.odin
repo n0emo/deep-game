@@ -2,6 +2,8 @@ package game
 
 import rl "vendor:raylib"
 
+TILE_SIZE :: 8
+
 Tile_Map :: struct {
 	tiles:  []Tile,
 	width:  u32,
@@ -22,7 +24,26 @@ tilemap_destroy :: proc(m: ^Tile_Map) {
 	delete(m.tiles)
 }
 
+tilemap_draw :: proc(m: ^Tile_Map, offset: rl.Vector2) {
+	for x in 0 ..< m.width {
+		for y in 0 ..< m.height {
+			pos := rl.Vector2 {
+				offset.x + f32(x) * f32(TILE_SIZE),
+				offset.y + f32(y) * f32(TILE_SIZE),
+			}
+			tile := tilemap_get(m, x, y)
+			rl.DrawTextureV(tile.texture, pos, rl.WHITE)
+		}
+	}
+}
+
 Tile :: struct {
-	image:       rl.Texture2D,
+	texture:     rl.Texture2D,
 	is_passable: bool,
+}
+
+tile_make :: proc(texture: rl.Texture2D, is_passable: bool) -> Tile {
+	assert(texture.width == TILE_SIZE)
+	assert(texture.height == TILE_SIZE)
+	return Tile{texture = texture, is_passable = is_passable}
 }
