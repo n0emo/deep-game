@@ -1,25 +1,34 @@
 package game
 
 import "core:fmt"
+import "core:mem/virtual"
 import rl "vendor:raylib"
 
 Assets :: struct {
+	arena:   virtual.Arena,
 	sprites: Assets_Sprites,
+}
+
+assets_load :: proc(assets_dir: string = "assets") -> ^Assets {
+	assets := new(Assets)
+	context.allocator = virtual.arena_allocator(&assets.arena)
+	assets.sprites = assets_sprites_load(fmt.tprintf("%s/%s", assets_dir, "sprites"))
+
+	return assets
+}
+
+assets_unload :: proc(assets: ^Assets) {
+	{
+		context.allocator = virtual.arena_allocator(&assets.arena)
+		assets_sprites_unload(&assets.sprites)
+	}
+	virtual.arena_destroy(&assets.arena)
+	free(assets)
 }
 
 Assets_Sprites :: struct {
 	player: rl.Texture2D,
 	grass:  rl.Texture2D,
-}
-
-assets_load :: proc(assets_dir: string = "assets") -> Assets {
-	sprites := assets_sprites_load(fmt.tprintf("%s/%s", assets_dir, "sprites"))
-
-	return Assets{sprites = sprites}
-}
-
-assets_unload :: proc(assets: ^Assets) {
-	assets_sprites_unload(&assets.sprites)
 }
 
 @(private = "file")

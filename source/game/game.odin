@@ -6,7 +6,7 @@ import rl "vendor:raylib"
 PIXEL_WINDOW_HEIGHT :: 180
 
 Game_Memory :: struct {
-	assets:      Assets,
+	assets:      ^Assets,
 	world:       World,
 	some_number: int,
 	run:         bool,
@@ -15,7 +15,7 @@ Game_Memory :: struct {
 game_make :: proc() -> ^Game_Memory {
 	g := new(Game_Memory)
 	assets := assets_load()
-	world := world_make(&assets)
+	world := world_make(assets)
 
 	g^ = Game_Memory {
 		assets = assets,
@@ -28,7 +28,7 @@ game_make :: proc() -> ^Game_Memory {
 
 game_destroy :: proc(g: ^Game_Memory) {
 	world_destroy(&g.world)
-	assets_unload(&g.assets)
+	assets_unload(g.assets)
 	free(g)
 }
 
