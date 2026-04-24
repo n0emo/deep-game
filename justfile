@@ -2,6 +2,10 @@ set windows-shell := ["powershell"]
 
 ext := if os_family() == "windows" { "bat" } else { "sh" }
 
+[private]
+@default:
+    just --list --unsorted
+
 build-debug:
     ./scripts/build_debug.{{ ext }}
 
