@@ -1,3 +1,5 @@
+set windows-shell := ["powershell"]
+
 ext := if os_family() == "windows" { "bat" } else { "sh" }
 
 build-debug:
