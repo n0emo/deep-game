@@ -5,7 +5,14 @@ package game
 
 import "core:os"
 
-_read_entire_file :: proc(name: string, allocator := context.allocator, loc := #caller_location) -> (data: []byte, success: bool) {
+_read_entire_file :: proc(
+	name: string,
+	allocator := context.allocator,
+	loc := #caller_location,
+) -> (
+	data: []byte,
+	success: bool,
+) {
 	err: os.Error
 	data, err = os.read_entire_file(name, allocator, loc)
 	return data, err == nil
