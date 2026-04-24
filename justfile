@@ -11,5 +11,8 @@ build-release:
 hot-reload:
     ./scripts/build_hot_reload.{{ ext }}
 
+hot-reload-watch:
+    watchexec -w source './scripts/build_hot_reload.{{ ext }}'
+
 build-web:
     ./scripts/build_web.{{ ext }}
