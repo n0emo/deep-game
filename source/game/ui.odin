@@ -2,21 +2,19 @@ package game
 
 import rl "vendor:raylib"
 
-Pause :: enum {
-	Pause,
-	Continue,
-	Settings,
+Menu :: enum {
+	DefaultMenu,
+    Continue,
+	NewGame,
+    Settings,
+    Sound,
+    Graphics,
 	Exit,
 }
 
 Settings :: enum {
 	Sound,
 	Graphics,
-}
-
-Screen :: union {
-	Pause,
-	Settings,
 }
 
 GameSettings :: struct {
@@ -33,7 +31,7 @@ Window :: struct {
 	y:      f32,
 }
 
-screen: Screen
+screen: Menu
 settings: GameSettings
 
 draw_background :: proc() {
@@ -84,13 +82,13 @@ main_menu_buttons :: proc(win: Window) {
 		win,
 		get_relative_height_center(win) * 0.05,
 		"Continue",
-	) {screen = Pause.Continue}
+	) {screen = .Continue}
 	if draw_btn_relative(
 		win,
 		get_relative_height_center(win) * 0.20,
 		"Settings",
-	) {screen = Pause.Settings}
-	if draw_btn_relative(win, get_relative_height_center(win) * 0.35, "Exit") {screen = Pause.Exit}
+	) {screen = .Settings}
+	if draw_btn_relative(win, get_relative_height_center(win) * 0.35, "Exit") {screen = .Exit}
 }
 
 settings_menu_buttons :: proc(win: Window) {
@@ -98,17 +96,17 @@ settings_menu_buttons :: proc(win: Window) {
 		win,
 		get_relative_height_center(win) * 0.05,
 		"Sounds",
-	) {screen = Settings.Sound}
+	) {screen = .Sound}
 	if draw_btn_relative(
 		win,
 		get_relative_height_center(win) * 0.20,
 		"Graphics",
-	) {screen = Settings.Graphics}
+	) {screen = .Graphics}
 	if draw_btn_relative(
 		win,
 		get_relative_height_center(win) * 0.35,
 		"Back",
-	) {screen = Pause.Pause}
+	) {screen = .DefaultMenu}
 }
 
 volume_menu_buttons :: proc(win: Window) {
@@ -118,7 +116,8 @@ volume_menu_buttons :: proc(win: Window) {
 		win,
 		get_relative_height_center(win) * 0.35,
 		"Back",
-	) {screen = Pause.Pause}
+	) {screen = .DefaultMenu}
+    
 }
 
 draw_float_window :: proc() {
@@ -140,22 +139,19 @@ draw_float_window :: proc() {
 	)
 	//rl.DrawRectangleRec(rec, rl.RED)
 	rl.DrawRectangleRounded(rec, 0.2, 3, rl.Fade(rl.MAROON, 0.7))
-	
-	#partial switch s in screen {
-	case Settings:
-		if s == .Sound {
-			volume_menu_buttons(win)
-		}
-		if s == .Graphics {
-		}
-	case Pause:
-		if s == .Pause {
 
-			main_menu_buttons(win)
-		}
-		if s == .Settings {
-			settings_menu_buttons(win)
-		}
+	#partial switch screen {
+	case .DefaultMenu:
+		main_menu_buttons(win)
+    case .Continue:
+
+	case .NewGame:
+
+    case .Settings:
+		settings_menu_buttons(win)
+
+    case .Sound:
+		volume_menu_buttons(win)
 
 	}
 }
