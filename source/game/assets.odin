@@ -29,6 +29,7 @@ assets_unload :: proc(assets: ^Assets) {
 Assets_Sprites :: struct {
 	player: rl.Texture2D,
 	grass:  rl.Texture2D,
+    main_menu: rl.Texture2D,
 }
 
 @(private = "file")
@@ -36,6 +37,7 @@ assets_sprites_load :: proc(sprites_dir: string) -> Assets_Sprites {
 	return Assets_Sprites {
 		player = load_sprite(sprites_dir, "player.png"),
 		grass = load_sprite(sprites_dir, "grass.png"),
+		main_menu = load_sprite(sprites_dir, "main_menu.png"),
 	}
 }
 
@@ -43,6 +45,7 @@ assets_sprites_load :: proc(sprites_dir: string) -> Assets_Sprites {
 assets_sprites_unload :: proc(sprites: ^Assets_Sprites) {
 	rl.UnloadTexture(sprites.player)
 	rl.UnloadTexture(sprites.grass)
+    rl.UnloadTexture(sprites.main_menu)
 }
 
 @(private = "file")

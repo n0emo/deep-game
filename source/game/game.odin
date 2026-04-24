@@ -54,11 +54,6 @@ game_update :: proc(g: ^Game_Memory) {
 	world_update(&g.world)
 	if rl.IsKeyPressed(.ESCAPE) {
 		g.run = false
-		if screen != .Pause {
-			screen = Pause.Pause
-		} else {
-			screen = Pause.Continue
-		}
 	}
 }
 
@@ -68,7 +63,7 @@ game_start ::proc(g:^Game_Memory){
 }
 
 game_menu ::proc(g:^Game_Memory){
-	menu()
+	menu(g)
 	g.state = Game_State.MENU
 }
 

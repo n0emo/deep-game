@@ -12,11 +12,6 @@ Menu :: enum {
 	Exit,
 }
 
-Settings :: enum {
-	Sound,
-	Graphics,
-}
-
 GameSettings :: struct {
 	volume:     f32,
 	music:      f32,
@@ -34,8 +29,28 @@ Window :: struct {
 screen: Menu
 settings: GameSettings
 
-draw_background :: proc() {
+draw_background :: proc(g: ^Game_Memory) {
+	rl.ClearBackground(rl.BLACK)
+    texture := g.assets.sprites.main_menu
 
+    sw := f32(rl.GetScreenWidth())
+    sh := f32(rl.GetScreenHeight())
+    tw := f32(texture.width)
+    th := f32(texture.height)
+
+    scale := max(sw / tw, sh / th)
+
+    src := rl.Rectangle{
+        0, 0, tw, th,
+    }
+    dst := rl.Rectangle{
+        (sw - tw * scale) / 2,
+        (sh - th * scale) / 2,
+        tw * scale,
+        th * scale,
+    }
+
+    rl.DrawTexturePro(texture, src, dst, {0, 0}, 0, rl.WHITE)
 }
 
 button_size :: proc(size: i32) {
@@ -86,9 +101,14 @@ main_menu_buttons :: proc(win: Window) {
 	if draw_btn_relative(
 		win,
 		get_relative_height_center(win) * 0.20,
+		"New Game",
+	) {screen = .NewGame}
+	if draw_btn_relative(
+		win,
+		get_relative_height_center(win) * 0.35,
 		"Settings",
 	) {screen = .Settings}
-	if draw_btn_relative(win, get_relative_height_center(win) * 0.35, "Exit") {screen = .Exit}
+	if draw_btn_relative(win, get_relative_height_center(win) * 0.50, "Exit") {screen = .Exit}
 }
 
 settings_menu_buttons :: proc(win: Window) {
@@ -138,7 +158,7 @@ draw_float_window :: proc() {
 		rl.BLACK,
 	)
 	//rl.DrawRectangleRec(rec, rl.RED)
-	rl.DrawRectangleRounded(rec, 0.2, 3, rl.Fade(rl.MAROON, 0.7))
+	rl.DrawRectangleRounded(rec, 0.2, 3, rl.Fade(rl.BEIGE, 0.8))
 
 	#partial switch screen {
 	case .DefaultMenu:
@@ -156,9 +176,10 @@ draw_float_window :: proc() {
 	}
 }
 
-menu :: proc() {
+menu :: proc(g : ^Game_Memory) {
 	rl.DrawFPS(10, 10)
 	rl.BeginDrawing()
 	button_size(32)
+    draw_background(g)
 	draw_float_window()
 }
