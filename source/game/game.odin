@@ -69,7 +69,7 @@ game_update :: proc(g: ^Game_Memory) {
 	}
 }
 
-draw :: proc(g: ^Game_Memory) {
+game_draw :: proc(g: ^Game_Memory) {
 	rl.BeginDrawing()
 	rl.ClearBackground(rl.SKYBLUE)
 

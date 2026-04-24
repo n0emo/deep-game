@@ -7,7 +7,7 @@ game_memory: ^Game_Memory
 @(export, link_name = "game_update")
 api_update :: proc() {
 	game_update(game_memory)
-	draw(game_memory)
+	game_draw(game_memory)
 
 	// Everything on tracking allocator is valid until end-of-frame.
 	free_all(context.temp_allocator)
