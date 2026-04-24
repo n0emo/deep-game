@@ -1,5 +1,3 @@
-// Wraps os.read_entire_file and os.write_entire_file, but they also work with emscripten.
-
 package game
 
 @(require_results)

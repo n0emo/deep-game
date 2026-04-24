@@ -40,16 +40,16 @@ main :: proc() {
 		context.allocator = mem.tracking_allocator(&tracking_allocator)
 	}
 
-	game.game_init_window()
-	game.game_init()
+	game.api_init_window()
+	game.api_init()
 
-	for game.game_should_run() {
-		game.game_update()
+	for game.api_should_run() {
+		game.api_update()
 	}
 
 	free_all(context.temp_allocator)
-	game.game_shutdown()
-	game.game_shutdown_window()
+	game.api_shutdown()
+	game.api_shutdown_window()
 
 	when USE_TRACKING_ALLOCATOR {
 		for _, value in tracking_allocator.allocation_map {

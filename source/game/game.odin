@@ -1,30 +1,3 @@
-/*
-This file is the starting point of your game.
-
-Some important procedures are:
-- game_init_window: Opens the window
-- game_init: Sets up the game state
-- game_update: Run once per frame
-- game_should_close: For stopping your game when close button is pressed
-- game_shutdown: Shuts down game and frees memory
-- game_shutdown_window: Closes window
-
-The procs above are used regardless if you compile using the `build_release`
-script or the `build_hot_reload` script. However, in the hot reload case, the
-contents of this file is compiled as part of `build/hot_reload/game.dll` (or
-.dylib/.so on mac/linux). In the hot reload cases some other procedures are
-also used in order to facilitate the hot reload functionality:
-
-- game_memory: Run just before a hot reload. That way game_hot_reload.exe has a
-	pointer to the game's memory that it can hand to the new game DLL.
-- game_hot_reloaded: Run after a hot reload so that the `g` global
-	variable can be set to whatever pointer it was in the old DLL.
-
-NOTE: When compiled as part of `build_release`, `build_debug` or `build_web`
-then this whole package is just treated as a normal Odin package. No DLL is
-created.
-*/
-
 package game
 
 import "core:fmt"
@@ -34,15 +7,33 @@ import rl "vendor:raylib"
 PIXEL_WINDOW_HEIGHT :: 180
 
 Game_Memory :: struct {
+	tilemap:        Tile_Map,
 	player_pos:     rl.Vector2,
 	player_texture: rl.Texture,
 	some_number:    int,
 	run:            bool,
 }
 
-g: ^Game_Memory
+game_make :: proc() -> ^Game_Memory {
+	g := new(Game_Memory)
+	tilemap := tilemap_make(20, 20)
 
-game_camera :: proc() -> rl.Camera2D {
+	g^ = Game_Memory {
+		tilemap        = tilemap,
+		run            = true,
+		some_number    = 100,
+		player_texture = rl.LoadTexture("assets/round_cat.png"),
+	}
+
+	return g
+}
+
+game_destroy :: proc(g: ^Game_Memory) {
+	tilemap_destroy(&g.tilemap)
+	free(g)
+}
+
+game_camera :: proc(g: ^Game_Memory) -> rl.Camera2D {
 	w := f32(rl.GetScreenWidth())
 	h := f32(rl.GetScreenHeight())
 
@@ -53,7 +44,7 @@ ui_camera :: proc() -> rl.Camera2D {
 	return {zoom = f32(rl.GetScreenHeight()) / PIXEL_WINDOW_HEIGHT}
 }
 
-update :: proc() {
+game_update :: proc(g: ^Game_Memory) {
 	input: rl.Vector2
 
 	if rl.IsKeyDown(.UP) || rl.IsKeyDown(.W) {
@@ -78,11 +69,11 @@ update :: proc() {
 	}
 }
 
-draw :: proc() {
+draw :: proc(g: ^Game_Memory) {
 	rl.BeginDrawing()
-	rl.ClearBackground(rl.BLACK)
+	rl.ClearBackground(rl.SKYBLUE)
 
-	rl.BeginMode2D(game_camera())
+	rl.BeginMode2D(game_camera(g))
 	rl.DrawTextureEx(g.player_texture, g.player_pos, 0, 1, rl.WHITE)
 	rl.DrawRectangleV({20, 20}, {10, 10}, rl.RED)
 	rl.DrawRectangleV({-30, -20}, {10, 10}, rl.GREEN)
@@ -90,9 +81,6 @@ draw :: proc() {
 
 	rl.BeginMode2D(ui_camera())
 
-	// NOTE: `fmt.ctprintf` uses the temp allocator. The temp allocator is
-	// cleared at the end of the frame by the main application, meaning inside
-	// `main_hot_reload.odin`, `main_release.odin` or `main_web_entry.odin`.
 	rl.DrawText(
 		fmt.ctprintf("some_number: %v\nplayer_pos: %v", g.some_number, g.player_pos),
 		5,
@@ -106,9 +94,6 @@ draw :: proc() {
 	rl.EndDrawing()
 }
 
-
-// In a web build, this is called when browser changes size. Remove the
-// `rl.SetWindowSize` call if you don't want a resizable game.
 game_parent_window_size_changed :: proc(w, h: int) {
 	rl.SetWindowSize(i32(w), i32(h))
 }

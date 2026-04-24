@@ -6,6 +6,13 @@ ext := if os_family() == "windows" { "bat" } else { "sh" }
 @default:
     just --list --unsorted
 
+prepare:
+    odinfmt source -w
+    just hot-reload
+    just build-debug
+    just build-release
+    just build-web
+
 build-debug:
     ./scripts/build_debug.{{ ext }}
 
