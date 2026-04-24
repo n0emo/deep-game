@@ -1,0 +1,29 @@
+name: Build
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Linux
+    runs-on: ubuntu-latest
+    steps:
+      - uses: laytan/setup-odin@v2
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          release: false
+
+      - uses: mymindstorm/setup-emsdk@v14
+
+      - uses: actions/checkout@v4
+
+      - name: Build web
+        run: ./build_web.sh
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: game-web
+          path: build/web/
+          if-no-files-found: error
