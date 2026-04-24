@@ -5,7 +5,6 @@ changes.
 
 package main
 
-import "core:c/libc"
 import "core:dynlib"
 import "core:fmt"
 import "core:log"
@@ -200,19 +199,13 @@ main :: proc() {
 			// This prevents the game from closing without you seeing the bad
 			// frees. This is mostly needed because I use Sublime Text and my game's
 			// console isn't hooked up into Sublime's console properly.
-			libc.getchar()
 			panic("Bad free detected")
 		}
 	}
 
 	free_all(context.temp_allocator)
 	game_api.shutdown()
-	if reset_tracking_allocator(&tracking_allocator) {
-		// This prevents the game from closing without you seeing the memory
-		// leaks. This is mostly needed because I use Sublime Text and my game's
-		// console isn't hooked up into Sublime's console properly.
-		libc.getchar()
-	}
+	reset_tracking_allocator(&tracking_allocator)
 
 	for &g in old_game_apis {
 		unload_game_api(&g)

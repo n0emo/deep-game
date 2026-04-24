@@ -44,14 +44,14 @@ Tile :: struct {
 
 tile_make :: proc(texture: rl.Texture2D, is_passable: bool) -> Tile {
 	if texture.width != TILE_SIZE || texture.height != TILE_SIZE {
-		rl.TraceLog(
-			.ERROR,
-			"Incorrect tile size: (%dx%d), must be (%dx%d)",
-			texture.width,
-			texture.height,
-			i32(TILE_SIZE),
-			i32(TILE_SIZE),
-		)
+		// rl.TraceLog(
+		// 	.ERROR,
+		// 	"Incorrect tile size: (%dx%d), must be (%dx%d)",
+		// 	texture.width,
+		// 	texture.height,
+		// 	i32(TILE_SIZE),
+		// 	i32(TILE_SIZE),
+		// )
 	}
 	return Tile{texture = texture, is_passable = is_passable}
 }
