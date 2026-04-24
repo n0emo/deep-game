@@ -140,7 +140,7 @@ draw_float_window :: proc() {
 	)
 	//rl.DrawRectangleRec(rec, rl.RED)
 	rl.DrawRectangleRounded(rec, 0.2, 3, rl.Fade(rl.MAROON, 0.7))
-
+	
 	#partial switch s in screen {
 	case Settings:
 		if s == .Sound {

@@ -10,6 +10,12 @@ Game_Memory :: struct {
 	world:       World,
 	some_number: int,
 	run:         bool,
+	state: Game_State,
+}
+
+Game_State :: enum{
+	MENU,
+	GAME,
 }
 
 game_make :: proc() -> ^Game_Memory {
@@ -21,6 +27,7 @@ game_make :: proc() -> ^Game_Memory {
 		assets = assets,
 		world  = world,
 		run    = true,
+		state = Game_State.MENU,
 	}
 
 	return g
@@ -46,7 +53,7 @@ ui_camera :: proc() -> rl.Camera2D {
 game_update :: proc(g: ^Game_Memory) {
 	world_update(&g.world)
 	if rl.IsKeyPressed(.ESCAPE) {
-		//	g.run = false
+		g.run = false
 		if screen != .Pause {
 			screen = Pause.Pause
 		} else {
@@ -55,30 +62,43 @@ game_update :: proc(g: ^Game_Memory) {
 	}
 }
 
+game_start ::proc(g:^Game_Memory){
+	world_draw(&g.world)
+	g.state = Game_State.GAME
+}
+
+game_menu ::proc(g:^Game_Memory){
+	menu()
+	g.state = Game_State.MENU
+}
 
 game_draw :: proc(g: ^Game_Memory) {
 
 	rl.BeginDrawing()
 	rl.ClearBackground(rl.SKYBLUE)
 	rl.BeginMode2D(game_camera(g))
-	world_draw(&g.world)
 	rl.EndMode2D()
 
 	rl.BeginMode2D(ui_camera())
-
+	
 	rl.DrawText(fmt.ctprintf("player_pos: %v", g.world.player.pos), 5, 5, 8, rl.WHITE)
-
-	#partial switch s in screen {
-	case Pause:
-		if s == .Exit {
-			g.run = false
-		}
-		if s != .Continue {
-			menu()
-		}
-	case Settings:
-		menu()
+	switch g.state  {
+	case .MENU:
+		game_menu(g)
+	case .GAME:
+		game_start(g)
 	}
+	// #partial switch s in screen {
+	// case Pause:
+	// 	if s == .Exit {
+	// 		g.run = false
+	// 	}
+	// 	if s != .Continue {
+	// 		menu()
+	// 	}
+	// case Settings:
+	// 	menu()
+	// }
 
 	rl.EndMode2D()
 
