@@ -54,9 +54,7 @@ game_draw :: proc(g: ^Game_Memory) {
 	rl.BeginDrawing()
 	rl.ClearBackground(rl.SKYBLUE)
 
-	rl.BeginMode2D(game_camera(g))
 	world_draw(&g.world)
-	rl.EndMode2D()
 
 	rl.BeginMode2D(ui_camera())
 
