@@ -2,7 +2,7 @@ package game
 
 import rl "vendor:raylib"
 
-TILE_SIZE :: 8
+TILE_SIZE :: 16
 
 Tile_Map :: struct {
 	tiles:  []Tile,
@@ -43,7 +43,15 @@ Tile :: struct {
 }
 
 tile_make :: proc(texture: rl.Texture2D, is_passable: bool) -> Tile {
-	assert(texture.width == TILE_SIZE)
-	assert(texture.height == TILE_SIZE)
+	if texture.width != TILE_SIZE || texture.height != TILE_SIZE {
+		rl.TraceLog(
+			.ERROR,
+			"Incorrect tile size: (%vx%x), must be (%vx%v)",
+			texture.width,
+			texture.height,
+			TILE_SIZE,
+			TILE_SIZE,
+		)
+	}
 	return Tile{texture = texture, is_passable = is_passable}
 }
