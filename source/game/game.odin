@@ -7,46 +7,43 @@ PIXEL_WINDOW_HEIGHT :: 180
 
 Game_Memory :: struct {
 	assets:      ^Assets,
-	state:       Game_State,
 	world:       World,
-	main_menu:   Main_Menu,
-	event_queue: Event_Queue,
-	input:       Input,
+	some_number: int,
+	run:         bool,
+	state: Game_State,
 }
 
-Game_State :: enum {
-	Exit,
-	Menu,
-	Game,
+Game_State :: enum{
+	MENU,
+	GAME,
 }
 
 game_make :: proc() -> ^Game_Memory {
 	g := new(Game_Memory)
-
-	event_queue := Event_Queue {
-		queue = make([dynamic]Event),
-	}
 	assets := assets_load()
 	world := world_make(assets)
-	main_menu := main_menu_make(assets)
-	input := input_make()
 
 	g^ = Game_Memory {
-		assets      = assets,
-		world       = world,
-		main_menu   = main_menu,
-		state       = .Menu,
-		event_queue = event_queue,
-		input       = input,
+		assets = assets,
+		world  = world,
+		run    = true,
+		state = Game_State.MENU,
 	}
+
 	return g
 }
 
 game_destroy :: proc(g: ^Game_Memory) {
 	world_destroy(&g.world)
 	assets_unload(g.assets)
-
 	free(g)
+}
+
+game_camera :: proc(g: ^Game_Memory) -> rl.Camera2D {
+	w := f32(rl.GetScreenWidth())
+	h := f32(rl.GetScreenHeight())
+
+	return {zoom = h / PIXEL_WINDOW_HEIGHT, target = g.world.player.pos, offset = {w / 2, h / 2}}
 }
 
 ui_camera :: proc() -> rl.Camera2D {
@@ -54,60 +51,59 @@ ui_camera :: proc() -> rl.Camera2D {
 }
 
 game_update :: proc(g: ^Game_Memory) {
-	input_update(&g.input, &g.event_queue)
-
-	for {
-		event := event_pop(&g.event_queue) or_break
-		rl.TraceLog(.INFO, "%s", fmt.tprint(event))
-		game_handle_event(g, event)
-	}
-
-	switch g.state {
-	case .Exit:
-	case .Menu:
-	case .Game:
-		world_update(&g.world, &g.event_queue)
+	world_update(&g.world)
+	if rl.IsKeyPressed(.ESCAPE) {
+		g.run = false
+		if screen != .Pause {
+			screen = Pause.Pause
+		} else {
+			screen = Pause.Continue
+		}
 	}
 }
 
-game_handle_event :: proc(g: ^Game_Memory, event: Event) {
-	#partial switch e in event {
-	case Event_Exit:
-		g.state = .Exit
-	case Event_Start_Game:
-		g.state = .Game
-	}
+game_start ::proc(g:^Game_Memory){
+	world_draw(&g.world)
+	g.state = Game_State.GAME
+}
 
-	switch g.state {
-	case .Exit:
-	case .Game:
-		world_handle_event(&g.world, event)
-	case .Menu:
-		main_menu_handle_event(&g.main_menu, event)
-	}
+game_menu ::proc(g:^Game_Memory){
+	menu()
+	g.state = Game_State.MENU
 }
 
 game_draw :: proc(g: ^Game_Memory) {
+
 	rl.BeginDrawing()
+	rl.ClearBackground(rl.SKYBLUE)
+	rl.BeginMode2D(game_camera(g))
+	rl.EndMode2D()
 
-	switch g.state {
-	case .Exit:
-	case .Menu:
-	case .Game:
-		world_draw(&g.world)
+	rl.BeginMode2D(ui_camera())
+	
+	rl.DrawText(fmt.ctprintf("player_pos: %v", g.world.player.pos), 5, 5, 8, rl.WHITE)
+	switch g.state  {
+	case .MENU:
+		game_menu(g)
+	case .GAME:
+		game_start(g)
 	}
+	// #partial switch s in screen {
+	// case Pause:
+	// 	if s == .Exit {
+	// 		g.run = false
+	// 	}
+	// 	if s != .Continue {
+	// 		menu()
+	// 	}
+	// case Settings:
+	// 	menu()
+	// }
 
-	switch g.state {
-	case .Exit:
-	case .Menu:
-		main_menu_ui(&g.main_menu, &g.event_queue)
-	case .Game:
-		world_ui(&g.world, &g.event_queue)
-	}
-
-	rl.DrawFPS(10, 10)
+	rl.EndMode2D()
 
 	rl.EndDrawing()
+
 }
 
 game_parent_window_size_changed :: proc(w, h: int) {
