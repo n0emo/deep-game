@@ -1,18 +1,29 @@
 package game
 
+import "../atlas"
 import "core:math/linalg"
 import rl "vendor:raylib"
 
 Player :: struct {
-	pos:     rl.Vector2,
-	texture: rl.Texture2D,
+	pos:       rl.Vector2,
+	animation: Animation,
 }
 
-player_make :: proc(texture: rl.Texture2D) -> Player {
-	return Player{pos = rl.Vector2(0), texture = texture}
+player_make :: proc(atlas: ^atlas.Atlas) -> Player {
+	animation := animation_make(
+		atlas.texture,
+		{
+			animation_frame_from_atlas(atlas, "player-idle-front-0"),
+			animation_frame_from_atlas(atlas, "player-idle-front-1"),
+			animation_frame_from_atlas(atlas, "player-idle-front-2"),
+			animation_frame_from_atlas(atlas, "player-idle-front-3"),
+		},
+	)
+	return Player{pos = rl.Vector2(0), animation = animation}
 }
 
 player_update :: proc(player: ^Player) {
+	animation_update(&player.animation)
 	input: rl.Vector2
 
 	if rl.IsKeyDown(.UP) || rl.IsKeyDown(.W) {
@@ -33,5 +44,5 @@ player_update :: proc(player: ^Player) {
 }
 
 player_draw :: proc(player: ^Player) {
-	rl.DrawTextureEx(player.texture, player.pos, 0, 1, rl.WHITE)
+	animation_draw(&player.animation, player.pos)
 }

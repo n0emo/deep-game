@@ -1,7 +1,9 @@
 package game
 
+import "../atlas"
 import "../tiled"
 import "core:fmt"
+import "core:path/slashpath"
 import rl "vendor:raylib"
 
 Assets :: struct {
@@ -27,7 +29,7 @@ assets_unload :: proc(assets: ^Assets) {
 }
 
 Assets_Sprites :: struct {
-	player:    rl.Texture2D,
+	player:    atlas.Atlas,
 	grass:     rl.Texture2D,
 	main_menu: rl.Texture2D,
 	heart:     rl.Texture2D,
@@ -37,7 +39,7 @@ Assets_Sprites :: struct {
 @(private = "file")
 assets_sprites_load :: proc(sprites_dir: string) -> Assets_Sprites {
 	return Assets_Sprites {
-		player = load_sprite(sprites_dir, "player.png"),
+		player = load_atlas(sprites_dir, "player.json"),
 		grass = load_sprite(sprites_dir, "grass.png"),
 		main_menu = load_sprite(sprites_dir, "main_menu.png"),
 		heart = load_sprite(sprites_dir, "heart.png"),
@@ -47,7 +49,7 @@ assets_sprites_load :: proc(sprites_dir: string) -> Assets_Sprites {
 
 @(private = "file")
 assets_sprites_unload :: proc(sprites: ^Assets_Sprites) {
-	rl.UnloadTexture(sprites.player)
+	atlas.unload(&sprites.player)
 	rl.UnloadTexture(sprites.grass)
 	rl.UnloadTexture(sprites.main_menu)
 	rl.UnloadTexture(sprites.heart)
@@ -57,4 +59,14 @@ assets_sprites_unload :: proc(sprites: ^Assets_Sprites) {
 @(private = "file")
 load_sprite :: proc(sprites_dir: string, name: string) -> rl.Texture2D {
 	return rl.LoadTexture(fmt.ctprintf("%s/%s", sprites_dir, name))
+}
+
+@(private = "file")
+load_atlas :: proc(sprites_dir: string, name: string) -> atlas.Atlas {
+	path := slashpath.join({sprites_dir, name}, context.temp_allocator)
+	atlas, err := atlas.load(path)
+	if err != nil {
+		panic(fmt.tprintf("Could not load atlas: %v", err))
+	}
+	return atlas
 }

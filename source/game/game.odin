@@ -32,7 +32,7 @@ game_make :: proc() -> ^Game_Memory {
 		assets = assets,
 		world  = world,
 		run    = true,
-		state  = Game_State.MENU,
+		state  = Game_State.GAME,
 	}
 	return g
 }

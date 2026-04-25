@@ -13,7 +13,7 @@ World :: struct {
 
 world_make :: proc(assets: ^Assets) -> World {
 	tilemap := tilemap_make(&assets.tilemap_level_1)
-	player := player_make(assets.sprites.player)
+	player := player_make(&assets.sprites.player)
 	camera := rl.Camera2D{}
 
 	return World{tilemap = tilemap, player = player, camera = camera}
