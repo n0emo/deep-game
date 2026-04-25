@@ -3,6 +3,7 @@ package tiled
 import "base:runtime"
 import "core:c"
 import "core:encoding/json"
+import "core:fmt"
 import "core:path/slashpath"
 import "core:strings"
 import rl "vendor:raylib"
@@ -34,6 +35,7 @@ tilemap_load :: proc(
 	error: Tilemap_Load_Error,
 ) {
 	desc := tilemap_descriptor_load(path) or_return
+	fmt.println(desc)
 
 	tilemap.width = desc.width
 	tilemap.height = desc.height
@@ -69,21 +71,28 @@ tilemap_load :: proc(
 
 			for tile_id, tile_index in l_desc.data {
 				gid := tile_id & 0x0FFFFFFF
-				for j in 0 ..< len(tilesets) {
-					if (gid >= tilesets[j].firstgit) {
+				if gid == 0 {
+					continue
+				}
+				found := false
+				for j := len(tilesets) - 1; j >= 0; j -= 1 {
+					if gid >= tilesets[j].firstgit {
 						id := gid - tilesets[j].firstgit
 						tile, _ := tileset_get_tile(&tilesets[j].tileset, id)
 						layer.tiles[tile_index] = tile
+						found = true
 						break
-					} else {
-						error = Error_Unknown_Tileset {
-							gid = tile_id,
-						}
-						return
 					}
 				}
-				layers[layer_index] = layer
+				if !found {
+					error = Error_Unknown_Tileset {
+						gid = tile_id,
+					}
+					return
+				}
 			}
+			layers[layer_index] = layer
+
 		case Object_Layer_Descriptor:
 			layer := Object_Layer {
 				id      = l_desc.id,
@@ -106,7 +115,6 @@ tilemap_load :: proc(
 
 	return
 }
-
 
 tilemap_unload :: proc(tilemap: ^Tilemap) {}
 
@@ -178,16 +186,135 @@ Tilemap_Descriptor :: struct {
 }
 
 @(private = "file")
-tilemap_descriptor_load :: proc(path: string) -> (Tilemap_Descriptor, json.Unmarshal_Error) {
+tilemap_descriptor_load :: proc(
+	path: string,
+) -> (
+	desc: Tilemap_Descriptor,
+	err: json.Unmarshal_Error,
+) {
 	cpath := strings.clone_to_cstring(path, context.temp_allocator)
 	data_size: c.int
 	data := rl.LoadFileData(cpath, &data_size)
-	desc: Tilemap_Descriptor
-	err := json.unmarshal(data[:data_size], &desc)
-	if err != nil {
-		return Tilemap_Descriptor{}, err
+
+	root_value, parse_err := json.parse(
+		data[:data_size],
+		spec = .JSON5,
+		allocator = context.temp_allocator,
+	)
+	if parse_err != nil {
+		err = .Invalid_Data
+		return
 	}
-	return desc, nil
+
+	root, ok := root_value.(json.Object)
+	if !ok {
+		err = .Invalid_Data
+		return
+	}
+
+	if v, e := root["width"].(json.Float); e {desc.width = u32(v)}
+	if v, e := root["height"].(json.Float); e {desc.height = u32(v)}
+	if v, e := root["tilewidth"].(json.Float); e {desc.tilewidth = u32(v)}
+	if v, e := root["tileheight"].(json.Float); e {desc.tileheight = u32(v)}
+	if v, e := root["infinite"].(json.Boolean); e {desc.infinite = bool(v)}
+	if v, e := root["type"].(json.String); e {desc.type = strings.clone(v)}
+	if v, e := root["orientation"].(json.String); e {desc.orientation = strings.clone(v)}
+	if v, e := root["renderorder"].(json.String); e {desc.renderorder = strings.clone(v)}
+	if v, e := root["tiledversion"].(json.String); e {desc.tiledversion = strings.clone(v)}
+	if v, e := root["version"].(json.String); e {desc.version = strings.clone(v)}
+
+	if tilesets_val, e := root["tilesets"].(json.Array); e {
+		desc.tilesets = make([]Tilemap_Descriptor_Tileset, len(tilesets_val))
+		for val, i in tilesets_val {
+			obj, obj_ok := val.(json.Object)
+			if !obj_ok do continue
+			if v, fe := obj["firstgid"].(json.Float); fe {
+				desc.tilesets[i].firstgid = u32(v)
+			}
+			if v, fe := obj["source"].(json.String); fe {
+				desc.tilesets[i].source = strings.clone(v)
+			}
+		}
+	}
+
+	if layers_val, e := root["layers"].(json.Array); e {
+		layers := make(
+			[dynamic]Tilemap_Descriptor_Layer,
+			0,
+			len(layers_val),
+			context.temp_allocator,
+		)
+
+		for val in layers_val {
+			obj, obj_ok := val.(json.Object)
+			if !obj_ok do continue
+
+			layer_type, _ := obj["type"].(json.String)
+
+			switch layer_type {
+			case "tilelayer":
+				layer := Tile_Descriptor_Layer{}
+				if v, fe := obj["id"].(json.Float); fe {layer.id = u32(v)}
+				if v, fe := obj["x"].(json.Float); fe {layer.x = u32(v)}
+				if v, fe := obj["y"].(json.Float); fe {layer.y = u32(v)}
+				if v, fe := obj["width"].(json.Float); fe {layer.width = u32(v)}
+				if v, fe := obj["height"].(json.Float); fe {layer.height = u32(v)}
+				if v, fe := obj["opacity"].(json.Float); fe {layer.opacity = u32(v)}
+				if v, fe := obj["name"].(json.String); fe {layer.name = strings.clone(v)}
+				if v, fe := obj["type"].(json.String); fe {layer.type = strings.clone(v)}
+				if v, fe := obj["visible"].(json.Boolean); fe {layer.visible = bool(v)}
+
+				if data_arr, fe := obj["data"].(json.Array); fe {
+					layer.data = make([]u32, len(data_arr))
+					for d, di in data_arr {
+						if iv, ie := d.(json.Float); ie {
+							layer.data[di] = u32(iv)
+						}
+					}
+				}
+				append(&layers, Tilemap_Descriptor_Layer(layer))
+
+			case "objectgroup":
+				layer := Object_Layer_Descriptor{}
+				if v, fe := obj["id"].(json.Float); fe {layer.id = u32(v)}
+				if v, fe := obj["x"].(json.Float); fe {layer.x = u32(v)}
+				if v, fe := obj["y"].(json.Float); fe {layer.y = u32(v)}
+				if v, fe := obj["visible"].(json.Boolean); fe {layer.visible = bool(v)}
+				if v, fe := obj["name"].(json.String); fe {layer.name = strings.clone(v)}
+
+				if objs_arr, fe := obj["objects"].(json.Array); fe {
+					layer.objects = make([]Object, len(objs_arr))
+					for o, oi in objs_arr {
+						oobj, ook := o.(json.Object)
+						if !ook do continue
+						if v, ie := oobj["id"].(json.Float); ie {layer.objects[oi].id = int(v)}
+						if v, ie := oobj["x"].(json.Float); ie {layer.objects[oi].x = f32(v)}
+						if v, ie := oobj["y"].(json.Float); ie {layer.objects[oi].y = f32(v)}
+						if v, ie := oobj["width"].(json.Float);
+						   ie {layer.objects[oi].width = int(v)}
+						if v, ie := oobj["height"].(json.Float);
+						   ie {layer.objects[oi].height = int(v)}
+						if v, ie := oobj["name"].(json.String);
+						   ie {layer.objects[oi].name = strings.clone(v)}
+						if v, ie := oobj["type"].(json.String);
+						   ie {layer.objects[oi].type = strings.clone(v)}
+						if v, ie := oobj["visible"].(json.Boolean);
+						   ie {layer.objects[oi].visible = bool(v)}
+						if v, ie := oobj["point"].(json.Boolean);
+						   ie {layer.objects[oi].point = bool(v)}
+						if v, ie := oobj["rotation"].(json.Float);
+						   ie {layer.objects[oi].rotation = int(v)}
+					}
+				}
+				append(&layers, Tilemap_Descriptor_Layer(layer))
+			}
+		}
+
+		desc.layers = make([]Tilemap_Descriptor_Layer, len(layers))
+		copy(desc.layers, layers[:])
+	}
+
+	return
 }
 
 @(private = "file")

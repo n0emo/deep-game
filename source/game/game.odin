@@ -58,7 +58,7 @@ game_update :: proc(g: ^Game_Memory) {
 
 	for {
 		event := event_pop(&g.event_queue) or_break
-		rl.TraceLog(.INFO, "%s", fmt.tprint(event))
+		rl.TraceLog(.DEBUG, "%s", fmt.tprint(event))
 		game_handle_event(g, event)
 	}
 

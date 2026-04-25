@@ -49,6 +49,15 @@ tileset_load :: proc(
 		tileset.texture = texture
 
 		tileset.tiles = make([]Tile, desc.tilecount)
+		for i in 0 ..< desc.tilecount {
+			tileset.tiles[i] = {
+				id      = i,
+				type    = "",
+				texture = texture,
+				rect    = tileset_get_tile_rect(&tileset, i),
+			}
+		}
+
 		for tile in desc.tiles {
 			tileset.tiles[tile.id] = {
 				id      = tile.id,

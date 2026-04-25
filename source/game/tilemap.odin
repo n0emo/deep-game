@@ -46,14 +46,14 @@ tilemap_draw :: proc(m: ^Tile_Map, offset: rl.Vector2) {
 					rl.DrawTexturePro(tile.texture, tile.rect, dest, 0.0, 0.0, rl.WHITE)
 				}
 			}
+
 		case tiled.Object_Layer:
 			for obj in l.objects {
-				rl.TraceLog(.INFO ,"Object: %s at (%f, %f) with size (%f, %f)", obj.name, obj.x, obj.y, obj.width, obj.height)
 				dest := rl.Rectangle {
 					x      = offset.x + obj.x,
 					y      = offset.y + obj.y,
-					width  = cast(f32) obj.width+1,
-					height = cast(f32) obj.height+1,
+					width  = cast(f32)obj.width + 1,
+					height = cast(f32)obj.height + 1,
 				}
 				rl.DrawRectangleLinesEx(dest, 1.0, rl.RED)
 			}
