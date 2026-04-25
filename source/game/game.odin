@@ -10,8 +10,19 @@ Game_Memory :: struct {
 	world:       World,
 	some_number: int,
 	run:         bool,
+	state:       Game_State,
 }
 
+Game_State :: enum {
+	MENU,
+	GAME,
+	FIGHT,
+	NEW_GAME,
+	MENU_SETTINGS,
+	MENU_SOUND,
+	MENU_GRAPHICS,
+	EXIT,
+}
 game_make :: proc() -> ^Game_Memory {
 	g := new(Game_Memory)
 	assets := assets_load()
@@ -21,14 +32,16 @@ game_make :: proc() -> ^Game_Memory {
 		assets = assets,
 		world  = world,
 		run    = true,
+		state  = Game_State.MENU,
 	}
-
 	return g
 }
 
 game_destroy :: proc(g: ^Game_Memory) {
 	world_destroy(&g.world)
 	assets_unload(g.assets)
+	main_menu_destroy()
+
 	free(g)
 }
 
@@ -46,39 +59,71 @@ ui_camera :: proc() -> rl.Camera2D {
 game_update :: proc(g: ^Game_Memory) {
 	world_update(&g.world)
 	if rl.IsKeyPressed(.ESCAPE) {
-		//	g.run = false
-		if screen != .Pause {
-			screen = Pause.Pause
-		} else {
-			screen = Pause.Continue
-		}
+		g.run = false
 	}
 }
 
+game_start :: proc(g: ^Game_Memory) {
+	world_draw(&g.world)
+	g.state = Game_State.GAME
+}
+
+game_menu :: proc(g: ^Game_Memory) {
+	if len(main_menu_buttons_list) == 0 {
+		main_menu_init()
+	}
+	menu_window := draw_main_menu(g)
+	draw_main_menu_buttons(&menu_window, g)
+	g.state = Game_State.MENU
+}
+
+game_hud :: proc(g: ^Game_Memory) {
+	//hud_init()
+	draw_hud(g)
+	g.state = Game_State.FIGHT
+}
 
 game_draw :: proc(g: ^Game_Memory) {
 
 	rl.BeginDrawing()
 	rl.ClearBackground(rl.SKYBLUE)
 	rl.BeginMode2D(game_camera(g))
-	world_draw(&g.world)
 	rl.EndMode2D()
 
 	rl.BeginMode2D(ui_camera())
 
 	rl.DrawText(fmt.ctprintf("player_pos: %v", g.world.player.pos), 5, 5, 8, rl.WHITE)
-
-	#partial switch s in screen {
-	case Pause:
-		if s == .Exit {
-			g.run = false
-		}
-		if s != .Continue {
-			menu()
-		}
-	case Settings:
-		menu()
+	switch g.state {
+	case .MENU:
+		game_menu(g)
+	case .GAME:
+		game_start(g)
+	case .FIGHT:
+		game_hud(g)
+	case .MENU_SETTINGS:
+		menu_window := draw_main_menu(g)
+		draw_main_menu_buttons(&menu_window, g)
+	case .NEW_GAME:
+		fmt.println(g.state)
+	case .MENU_SOUND:
+		menu_window := draw_main_menu(g)
+		draw_volume_menu_buttons(&menu_window, g)
+	case .MENU_GRAPHICS:
+		draw_main_menu(g)
+	case .EXIT:
+		g.run = false
 	}
+	// #partial switch s in screen {
+	// case Pause:
+	// 	if s == .Exit {
+	// 		g.run = false
+	// 	}
+	// 	if s != .Continue {
+	// 		menu()
+	// 	}
+	// case Settings:
+	// 	menu()
+	// }
 
 	rl.EndMode2D()
 
