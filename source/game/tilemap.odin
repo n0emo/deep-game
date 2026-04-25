@@ -6,20 +6,21 @@ import rl "vendor:raylib"
 TILE_SIZE :: 16
 
 Tile_Map :: struct {
-	tilemap: ^tiled.Tilemap,
+	tilemap:    ^tiled.Tilemap,
+	base_layer: ^tiled.Tile_Layer,
+	prop_layer: ^tiled.Tile_Layer,
+	obj_layer:  ^tiled.Object_Layer,
 }
 
-tilemap_make :: proc(tilemap: ^tiled.Tilemap) -> Tile_Map {
-	return Tile_Map{tilemap = tilemap}
+tilemap_make :: proc(tilemap: ^tiled.Tilemap) -> (tm: Tile_Map, ok: bool) {
+	tm.tilemap = tilemap
+	tm.base_layer = find_tile_layer(tilemap, "base") or_return
+	tm.prop_layer = find_tile_layer(tilemap, "prop") or_return
+	tm.obj_layer = find_obj_layer(tilemap, "object") or_return
+	return tm, true
 }
-
 
 tilemap_destroy :: proc(m: ^Tile_Map) {
-}
-
-@(private = "file")
-layer_get_tile :: proc(m: ^tiled.Tile_Layer, x, y: u32) -> ^tiled.Tile {
-	return &m.tiles[m.width * y + x]
 }
 
 tilemap_width :: proc(m: ^Tile_Map) -> u32 {
@@ -31,34 +32,9 @@ tilemap_height :: proc(m: ^Tile_Map) -> u32 {
 }
 
 tilemap_draw :: proc(m: ^Tile_Map, offset: rl.Vector2) {
-	for layer in m.tilemap.layers {
-		switch &l in layer {
-		case tiled.Tile_Layer:
-			for x in 0 ..< tilemap_width(m) {
-				for y in 0 ..< tilemap_height(m) {
-					dest := rl.Rectangle {
-						x      = offset.x + f32(x) * f32(TILE_SIZE),
-						y      = offset.y + f32(y) * f32(TILE_SIZE),
-						width  = TILE_SIZE,
-						height = TILE_SIZE,
-					}
-					tile := layer_get_tile(&l, x, y)
-					rl.DrawTexturePro(tile.texture, tile.rect, dest, 0.0, 0.0, rl.WHITE)
-				}
-			}
-
-		case tiled.Object_Layer:
-			for obj in l.objects {
-				dest := rl.Rectangle {
-					x      = offset.x + obj.x,
-					y      = offset.y + obj.y,
-					width  = cast(f32)obj.width + 1,
-					height = cast(f32)obj.height + 1,
-				}
-				rl.DrawRectangleLinesEx(dest, 1.0, rl.RED)
-			}
-		}
-	}
+	draw_tile_layer(m, m.base_layer, offset)
+	draw_tile_layer(m, m.prop_layer, offset)
+	draw_obj_layer(m, m.obj_layer, offset)
 }
 
 Tile :: struct {
@@ -66,16 +42,70 @@ Tile :: struct {
 	is_passable: bool,
 }
 
-tile_make :: proc(texture: rl.Texture2D, is_passable: bool) -> Tile {
-	if texture.width != TILE_SIZE || texture.height != TILE_SIZE {
-		// rl.TraceLog(
-		// 	.ERROR,
-		// 	"Incorrect tile size: (%dx%d), must be (%dx%d)",
-		// 	texture.width,
-		// 	texture.height,
-		// 	i32(TILE_SIZE),
-		// 	i32(TILE_SIZE),
-		// )
+@(private = "file")
+draw_tile_layer :: proc(m: ^Tile_Map, l: ^tiled.Tile_Layer, offset: rl.Vector2) {
+	for x in 0 ..< tilemap_width(m) {
+		for y in 0 ..< tilemap_height(m) {
+			dest := rl.Rectangle {
+				x      = offset.x + f32(x) * f32(TILE_SIZE),
+				y      = offset.y + f32(y) * f32(TILE_SIZE),
+				width  = TILE_SIZE,
+				height = TILE_SIZE,
+			}
+			tile := layer_get_tile(l, x, y)
+			rl.DrawTexturePro(tile.texture, tile.rect, dest, 0.0, 0.0, rl.WHITE)
+		}
 	}
-	return Tile{texture = texture, is_passable = is_passable}
+}
+
+@(private = "file")
+draw_obj_layer :: proc(m: ^Tile_Map, l: ^tiled.Object_Layer, offset: rl.Vector2) {
+	for obj in l.objects {
+		dest := rl.Rectangle {
+			x      = offset.x + obj.x,
+			y      = offset.y + obj.y,
+			width  = cast(f32)obj.width + 1,
+			height = cast(f32)obj.height + 1,
+		}
+		rl.DrawRectangleLinesEx(dest, 1.0, rl.RED)
+	}
+}
+
+@(private = "file")
+find_tile_layer :: proc(
+	tilemap: ^tiled.Tilemap,
+	class: string,
+) -> (
+	layer: ^tiled.Tile_Layer,
+	ok: bool,
+) {
+	for &layer in tilemap.layers {
+		tile_layer := (&layer.(tiled.Tile_Layer)) or_continue
+		if tile_layer.class == class {
+			return tile_layer, true
+		}
+	}
+	return nil, false
+}
+
+@(private = "file")
+find_obj_layer :: proc(
+	tilemap: ^tiled.Tilemap,
+	class: string,
+) -> (
+	layer: ^tiled.Object_Layer,
+	ok: bool,
+) {
+	for &layer in tilemap.layers {
+		tile_layer := (&layer.(tiled.Object_Layer)) or_continue
+		if tile_layer.class == class {
+			return tile_layer, true
+		}
+	}
+	return nil, false
+}
+
+@(private = "file")
+layer_get_tile :: proc(layer: ^tiled.Tile_Layer, x, y: u32) -> ^tiled.Tile {
+	return &layer.tiles[layer.width * y + x]
 }

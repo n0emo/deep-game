@@ -3,7 +3,6 @@ package tiled
 import "base:runtime"
 import "core:c"
 import "core:encoding/json"
-import "core:fmt"
 import "core:path/slashpath"
 import "core:strings"
 import rl "vendor:raylib"
@@ -35,7 +34,6 @@ tilemap_load :: proc(
 	error: Tilemap_Load_Error,
 ) {
 	desc := tilemap_descriptor_load(path) or_return
-	fmt.println(desc)
 
 	tilemap.width = desc.width
 	tilemap.height = desc.height
@@ -64,6 +62,7 @@ tilemap_load :: proc(
 				width   = l_desc.width,
 				height  = l_desc.height,
 				name    = strings.clone(l_desc.name),
+				class   = strings.clone(l_desc.class),
 				opacity = l_desc.opacity,
 				visible = l_desc.visible,
 				tiles   = make([]Tile, len(l_desc.data)),
@@ -101,6 +100,7 @@ tilemap_load :: proc(
 				width   = l_desc.width,
 				height  = l_desc.height,
 				name    = strings.clone(l_desc.name),
+				class   = strings.clone(l_desc.class),
 				opacity = l_desc.opacity,
 				visible = l_desc.visible,
 				objects = make([]Object, 0),
@@ -149,6 +149,7 @@ Object_Layer :: struct {
 	width:   u32,
 	height:  u32,
 	name:    string,
+	class:   string,
 	opacity: u32,
 	visible: bool,
 	objects: []Object,
@@ -161,6 +162,7 @@ Tile_Layer :: struct {
 	width:   u32,
 	height:  u32,
 	name:    string,
+	class:   string,
 	opacity: u32,
 	visible: bool,
 	tiles:   []Tile,
@@ -261,6 +263,7 @@ tilemap_descriptor_load :: proc(
 				if v, fe := obj["height"].(json.Float); fe {layer.height = u32(v)}
 				if v, fe := obj["opacity"].(json.Float); fe {layer.opacity = u32(v)}
 				if v, fe := obj["name"].(json.String); fe {layer.name = strings.clone(v)}
+				if v, fe := obj["class"].(json.String); fe {layer.class = strings.clone(v)}
 				if v, fe := obj["type"].(json.String); fe {layer.type = strings.clone(v)}
 				if v, fe := obj["visible"].(json.Boolean); fe {layer.visible = bool(v)}
 
@@ -281,6 +284,7 @@ tilemap_descriptor_load :: proc(
 				if v, fe := obj["y"].(json.Float); fe {layer.y = u32(v)}
 				if v, fe := obj["visible"].(json.Boolean); fe {layer.visible = bool(v)}
 				if v, fe := obj["name"].(json.String); fe {layer.name = strings.clone(v)}
+				if v, fe := obj["class"].(json.String); fe {layer.class = strings.clone(v)}
 
 				if objs_arr, fe := obj["objects"].(json.Array); fe {
 					layer.objects = make([]Object, len(objs_arr))
@@ -362,6 +366,7 @@ Object_Layer_Descriptor :: struct {
 	width:   u32,
 	height:  u32,
 	name:    string,
+	class:   string,
 	opacity: u32,
 	visible: bool,
 	objects: []Object,
@@ -379,6 +384,7 @@ Tile_Descriptor_Layer :: struct {
 	height:  u32,
 	id:      u32,
 	name:    string,
+	class:   string,
 	opacity: u32,
 	type:    string,
 	visible: bool,

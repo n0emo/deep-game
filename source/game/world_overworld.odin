@@ -8,6 +8,8 @@ CAMERA_LERP :: 0.05
 PLAYER_SPEED :: 7
 PLAYER_NON_IDLE_TIME :: 0.1
 
+BACKGROUND_COLOR := rl.GetColor(0x29211dff)
+
 World_Overworld :: struct {
 	tilemap: Tile_Map,
 	player:  Overworld_Player,
@@ -15,7 +17,10 @@ World_Overworld :: struct {
 }
 
 world_overworld_make :: proc(assets: ^Assets) -> World_Overworld {
-	tilemap := tilemap_make(&assets.tilemap_level_1)
+	tilemap, ok := tilemap_make(&assets.tilemap_level_1)
+	if !ok {
+		panic("Could not load tilemap")
+	}
 	player := player_make(&assets.sprites.player)
 	camera := rl.Camera2D{}
 
@@ -32,7 +37,7 @@ world_overworld_update :: proc(w: ^World_Overworld, queue: ^Event_Queue) {
 }
 
 world_overworld_draw :: proc(w: ^World_Overworld) {
-	rl.ClearBackground(rl.BLACK)
+	rl.ClearBackground(BACKGROUND_COLOR)
 	rl.BeginMode2D(w.camera)
 	tilemap_draw(&w.tilemap, rl.Vector2(0))
 	player_draw(&w.player)
@@ -223,7 +228,7 @@ player_reset_position :: proc(player: ^Overworld_Player) {
 
 @(private = "file")
 world_update_camera :: proc(w: ^World_Overworld) {
-	w.camera.zoom = 4.0
+	w.camera.zoom = 6.0
 	w.camera.offset = rl.Vector2{f32(rl.GetScreenWidth()) * 0.5, f32(rl.GetScreenHeight()) * 0.5}
 	w.camera.target = linalg.lerp(w.camera.target, w.player.pos, CAMERA_LERP)
 }
