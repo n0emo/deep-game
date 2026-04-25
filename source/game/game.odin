@@ -1,5 +1,6 @@
 package game
 
+import "core:fmt"
 import rl "vendor:raylib"
 
 PIXEL_WINDOW_HEIGHT :: 180
@@ -10,6 +11,7 @@ Game_Memory :: struct {
 	world:       World,
 	main_menu:   Main_Menu,
 	event_queue: Event_Queue,
+	input:       Input,
 }
 
 Game_State :: enum {
@@ -27,6 +29,7 @@ game_make :: proc() -> ^Game_Memory {
 	assets := assets_load()
 	world := world_make(assets)
 	main_menu := main_menu_make(assets)
+	input := input_make()
 
 	g^ = Game_Memory {
 		assets      = assets,
@@ -34,6 +37,7 @@ game_make :: proc() -> ^Game_Memory {
 		main_menu   = main_menu,
 		state       = .Menu,
 		event_queue = event_queue,
+		input       = input,
 	}
 	return g
 }
@@ -50,8 +54,11 @@ ui_camera :: proc() -> rl.Camera2D {
 }
 
 game_update :: proc(g: ^Game_Memory) {
+	input_update(&g.input, &g.event_queue)
+
 	for {
 		event := event_pop(&g.event_queue) or_break
+		rl.TraceLog(.INFO, "%s", fmt.tprint(event))
 		game_handle_event(g, event)
 	}
 
@@ -59,7 +66,7 @@ game_update :: proc(g: ^Game_Memory) {
 	case .Exit:
 	case .Menu:
 	case .Game:
-		world_update(&g.world)
+		world_update(&g.world, &g.event_queue)
 	}
 }
 
@@ -74,6 +81,7 @@ game_handle_event :: proc(g: ^Game_Memory, event: Event) {
 	switch g.state {
 	case .Exit:
 	case .Game:
+		world_handle_event(&g.world, event)
 	case .Menu:
 		main_menu_handle_event(&g.main_menu, event)
 	}
@@ -97,6 +105,7 @@ game_draw :: proc(g: ^Game_Memory) {
 		world_ui(&g.world, &g.event_queue)
 	}
 
+	rl.DrawFPS(10, 10)
 
 	rl.EndDrawing()
 }

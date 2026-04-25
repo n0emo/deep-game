@@ -20,10 +20,10 @@ world_destroy :: proc(w: ^World) {
 	world_overworld_destroy(&w.overworld)
 }
 
-world_update :: proc(w: ^World) {
+world_update :: proc(w: ^World, queue: ^Event_Queue) {
 	switch w.state {
 	case .Overworld:
-		world_overworld_update(&w.overworld)
+		world_overworld_update(&w.overworld, queue)
 	case .Fight:
 	}
 }
@@ -38,4 +38,10 @@ world_draw :: proc(w: ^World) {
 
 world_ui :: proc(w: ^World, queue: ^Event_Queue) {}
 
-world_handle_event :: proc(w: ^World, event: Event) {}
+world_handle_event :: proc(w: ^World, event: Event) {
+	switch w.state {
+	case .Overworld:
+		world_overworld_handle_event(&w.overworld, event)
+	case .Fight:
+	}
+}

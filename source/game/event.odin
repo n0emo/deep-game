@@ -26,6 +26,14 @@ Event_Change_Sfx_Volume :: struct {
 	volume: f32,
 }
 
+Event_Input_Go :: struct {
+	direction: Direction,
+}
+
+Event_Player_Stopped :: struct {
+	direction: Direction,
+}
+
 Event :: union {
 	Event_Start_Game,
 	Event_Exit,
@@ -34,6 +42,8 @@ Event :: union {
 	Event_Change_Master_Volume,
 	Event_Change_Music_Volume,
 	Event_Change_Sfx_Volume,
+	Event_Input_Go,
+	Event_Player_Stopped,
 	Event_Fight,
 	Event_Fight_Player_Turn,
 	Event_Fight_Enemy_Turn,

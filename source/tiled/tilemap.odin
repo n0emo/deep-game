@@ -109,7 +109,7 @@ Tilemap_Layer :: struct {
 	tiles:   []Tile,
 }
 
-
+@(private = "file")
 Tilemap_Descriptor :: struct {
 	type:             string,
 	infinite:         bool,
@@ -128,6 +128,7 @@ Tilemap_Descriptor :: struct {
 	version:          string,
 }
 
+@(private = "file")
 tilemap_descriptor_load :: proc(path: string) -> (Tilemap_Descriptor, json.Unmarshal_Error) {
 	cpath := strings.clone_to_cstring(path, context.temp_allocator)
 	data_size: c.int
@@ -140,6 +141,7 @@ tilemap_descriptor_load :: proc(path: string) -> (Tilemap_Descriptor, json.Unmar
 	return desc, nil
 }
 
+@(private = "file")
 tilemap_descriptor_unload :: proc(desc: ^Tilemap_Descriptor) {
 	for &tileset in desc.tilesets {
 		delete(tileset.source)
@@ -158,11 +160,13 @@ tilemap_descriptor_unload :: proc(desc: ^Tilemap_Descriptor) {
 	delete(desc.version)
 }
 
+@(private = "file")
 Tilemap_Descriptor_Tileset :: struct {
 	firstgid: u32,
 	source:   string,
 }
 
+@(private = "file")
 Tilemap_Descriptor_Layer :: struct {
 	data:    []u32,
 	height:  u32,

@@ -5,6 +5,8 @@ import "core:math/linalg"
 import rl "vendor:raylib"
 
 CAMERA_LERP :: 0.05
+PLAYER_SPEED :: 7
+PLAYER_NON_IDLE_TIME :: 0.1
 
 World_Overworld :: struct {
 	tilemap: Tile_Map,
@@ -24,8 +26,8 @@ world_overworld_destroy :: proc(w: ^World_Overworld) {
 	tilemap_destroy(&w.tilemap)
 }
 
-world_overworld_update :: proc(w: ^World_Overworld) {
-	player_update(&w.player)
+world_overworld_update :: proc(w: ^World_Overworld, queue: ^Event_Queue) {
+	player_update(&w.player, queue)
 	world_update_camera(w)
 }
 
@@ -39,53 +41,184 @@ world_overworld_draw :: proc(w: ^World_Overworld) {
 
 world_overworld_ui :: proc(w: ^World_Overworld, queue: ^Event_Queue) {}
 
-world_overworld_handle_event :: proc(w: ^World_Overworld, event: Event) {}
+world_overworld_handle_event :: proc(w: ^World_Overworld, event: Event) {
+	#partial switch e in event {
+	case Event_Input_Go:
+		// TODO: Check potential collision here
+		if _, ok := w.player.state.(Player_Idle); ok {
+			player_start_moving(&w.player, e.direction)
+		}
+	}
+}
 
 @(private = "file")
 Overworld_Player :: struct {
-	pos:       rl.Vector2,
-	animation: Animation,
+	tile:              [2]i32,
+	pos:               rl.Vector2,
+	state:             Player_State,
+	idle_time:         f32,
+	animation_current: ^Animation,
+	animations_idle:   [Direction]Animation,
+	animations_moving: [Direction]Animation,
+	direction:         Direction,
+}
+
+@(private = "file")
+Player_State :: union {
+	Player_Idle,
+	Player_Moving,
+}
+
+Player_Idle :: struct {}
+
+Player_Moving :: struct {
+	start:        rl.Vector2,
+	end:          rl.Vector2,
+	interpolator: f32,
 }
 
 @(private = "file")
 player_make :: proc(atlas: ^atlas.Atlas) -> Overworld_Player {
-	animation := animation_make(
-		atlas.texture,
-		{
-			animation_frame_from_atlas(atlas, "player-idle-front-0"),
-			animation_frame_from_atlas(atlas, "player-idle-front-1"),
-			animation_frame_from_atlas(atlas, "player-idle-front-2"),
-			animation_frame_from_atlas(atlas, "player-idle-front-3"),
-		},
-	)
-	return Overworld_Player{pos = rl.Vector2(0), animation = animation}
+	animations_idle := [Direction]Animation {
+		.Up    = animation_make(
+			atlas.texture,
+			{
+				animation_frame_from_atlas(atlas, "player-idle-back-0"),
+				animation_frame_from_atlas(atlas, "player-idle-back-1"),
+				animation_frame_from_atlas(atlas, "player-idle-back-2"),
+				animation_frame_from_atlas(atlas, "player-idle-back-3"),
+			},
+		),
+		.Down  = animation_make(
+			atlas.texture,
+			{
+				animation_frame_from_atlas(atlas, "player-idle-front-0"),
+				animation_frame_from_atlas(atlas, "player-idle-front-1"),
+				animation_frame_from_atlas(atlas, "player-idle-front-2"),
+				animation_frame_from_atlas(atlas, "player-idle-front-3"),
+			},
+		),
+		.Left  = animation_make(
+			atlas.texture,
+			{
+				animation_frame_from_atlas(atlas, "player-idle-left-0"),
+				animation_frame_from_atlas(atlas, "player-idle-left-1"),
+				animation_frame_from_atlas(atlas, "player-idle-left-2"),
+				animation_frame_from_atlas(atlas, "player-idle-left-3"),
+			},
+		),
+		.Right = animation_make(
+			atlas.texture,
+			{
+				animation_frame_from_atlas(atlas, "player-idle-right-0"),
+				animation_frame_from_atlas(atlas, "player-idle-right-1"),
+				animation_frame_from_atlas(atlas, "player-idle-right-2"),
+				animation_frame_from_atlas(atlas, "player-idle-right-3"),
+			},
+		),
+	}
+
+	animations_moving := [Direction]Animation {
+		.Up    = animation_make(
+			atlas.texture,
+			{
+				animation_frame_from_atlas(atlas, "player-move-back-0"),
+				animation_frame_from_atlas(atlas, "player-move-back-1"),
+				animation_frame_from_atlas(atlas, "player-move-back-2"),
+				animation_frame_from_atlas(atlas, "player-move-back-3"),
+			},
+		),
+		.Down  = animation_make(
+			atlas.texture,
+			{
+				animation_frame_from_atlas(atlas, "player-move-front-0"),
+				animation_frame_from_atlas(atlas, "player-move-front-1"),
+				animation_frame_from_atlas(atlas, "player-move-front-2"),
+				animation_frame_from_atlas(atlas, "player-move-front-3"),
+			},
+		),
+		.Left  = animation_make(
+			atlas.texture,
+			{
+				animation_frame_from_atlas(atlas, "player-move-left-0"),
+				animation_frame_from_atlas(atlas, "player-move-left-1"),
+				animation_frame_from_atlas(atlas, "player-move-left-2"),
+				animation_frame_from_atlas(atlas, "player-move-left-3"),
+			},
+		),
+		.Right = animation_make(
+			atlas.texture,
+			{
+				animation_frame_from_atlas(atlas, "player-move-right-0"),
+				animation_frame_from_atlas(atlas, "player-move-right-1"),
+				animation_frame_from_atlas(atlas, "player-move-right-2"),
+				animation_frame_from_atlas(atlas, "player-move-right-3"),
+			},
+		),
+	}
+
+	player := Overworld_Player {
+		pos               = rl.Vector2(0),
+		state             = Player_Idle{},
+		animations_idle   = animations_idle,
+		animations_moving = animations_moving,
+		direction         = .Down,
+	}
+
+	return player
 }
 
 @(private = "file")
-player_update :: proc(player: ^Overworld_Player) {
-	animation_update(&player.animation)
-	input: rl.Vector2
-
-	if rl.IsKeyDown(.UP) || rl.IsKeyDown(.W) {
-		input.y -= 1
-	}
-	if rl.IsKeyDown(.DOWN) || rl.IsKeyDown(.S) {
-		input.y += 1
-	}
-	if rl.IsKeyDown(.LEFT) || rl.IsKeyDown(.A) {
-		input.x -= 1
-	}
-	if rl.IsKeyDown(.RIGHT) || rl.IsKeyDown(.D) {
-		input.x += 1
+player_update :: proc(player: ^Overworld_Player, queue: ^Event_Queue) {
+	if player.animation_current == nil {
+		player.animation_current = &player.animations_idle[.Down]
 	}
 
-	input = linalg.normalize0(input)
-	player.pos += input * rl.GetFrameTime() * 100
+	animation_update(player.animation_current)
+
+	player_reset_position(player)
+
+	switch &state in player.state {
+	case Player_Idle:
+		player.idle_time += rl.GetFrameTime()
+		if player.idle_time > PLAYER_NON_IDLE_TIME {
+			player.animation_current = &player.animations_idle[player.direction]
+		}
+	case Player_Moving:
+		player.idle_time = 0
+		state.interpolator += rl.GetFrameTime() * PLAYER_SPEED
+		player.pos = linalg.lerp(state.start, state.end, state.interpolator)
+		if state.interpolator >= 1.0 {
+			event_dispatch(queue, Event_Player_Stopped{direction = player.direction})
+			player.state = Player_Idle{}
+		}
+	}
 }
+
 
 @(private = "file")
 player_draw :: proc(player: ^Overworld_Player) {
-	animation_draw(&player.animation, player.pos)
+	animation_draw(player.animation_current, player.pos)
+}
+
+@(private = "file")
+player_start_moving :: proc(player: ^Overworld_Player, direction: Direction) {
+	dir_vec := direction_to_vec(direction)
+	old_tile := player.tile
+	new_tile := old_tile + {i32(dir_vec.x), i32(dir_vec.y)}
+	player.tile = new_tile
+	player.animation_current = &player.animations_moving[direction]
+	player.direction = direction
+	player.state = Player_Moving {
+		start        = {f32(old_tile.x * TILE_SIZE), f32(old_tile.y * TILE_SIZE)},
+		end          = {f32(new_tile.x * TILE_SIZE), f32(new_tile.y * TILE_SIZE)},
+		interpolator = 0.0,
+	}
+}
+
+@(private = "file")
+player_reset_position :: proc(player: ^Overworld_Player) {
+	player.pos = {f32(player.tile.x * TILE_SIZE), f32(player.tile.y * TILE_SIZE)}
 }
 
 @(private = "file")
