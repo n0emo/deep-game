@@ -1,28 +1,28 @@
 package game
 
+import "../tiled"
 import "core:fmt"
-import "core:mem/virtual"
 import rl "vendor:raylib"
 
 Assets :: struct {
-	arena:   virtual.Arena,
-	sprites: Assets_Sprites,
+	sprites:         Assets_Sprites,
+	tiled_loader:    ^tiled.Loader,
+	tilemap_level_1: tiled.Tilemap,
 }
 
 assets_load :: proc(assets_dir: string = "assets") -> ^Assets {
 	assets := new(Assets)
-	context.allocator = virtual.arena_allocator(&assets.arena)
 	assets.sprites = assets_sprites_load(fmt.tprintf("%s/%s", assets_dir, "sprites"))
+	assets.tiled_loader = tiled.loader_make()
+	tilemap_level_1, _ := tiled.tilemap_load(assets.tiled_loader, "./assets/tilemaps/level-1.tmj")
+	assets.tilemap_level_1 = tilemap_level_1
 
 	return assets
 }
 
 assets_unload :: proc(assets: ^Assets) {
-	{
-		context.allocator = virtual.arena_allocator(&assets.arena)
-		assets_sprites_unload(&assets.sprites)
-	}
-	virtual.arena_destroy(&assets.arena)
+	assets_sprites_unload(&assets.sprites)
+	tiled.loader_destroy(assets.tiled_loader)
 	free(assets)
 }
 

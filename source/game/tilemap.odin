@@ -1,38 +1,46 @@
 package game
 
+import "../tiled"
 import rl "vendor:raylib"
 
 TILE_SIZE :: 16
 
 Tile_Map :: struct {
-	tiles:  []Tile,
-	width:  u32,
-	height: u32,
+	tilemap: ^tiled.Tilemap,
 }
 
-tilemap_make :: proc(width, height: u32) -> Tile_Map {
-	return Tile_Map{tiles = make([]Tile, width * height), width = width, height = height}
+tilemap_make :: proc(tilemap: ^tiled.Tilemap) -> Tile_Map {
+	return Tile_Map{tilemap = tilemap}
 }
 
-tilemap_get :: proc(m: ^Tile_Map, x, y: u32) -> ^Tile {
-	assert(x < m.width)
-	assert(y < m.height)
-	return &m.tiles[y * m.width + x]
-}
 
 tilemap_destroy :: proc(m: ^Tile_Map) {
-	delete(m.tiles)
+}
+
+tilemap_get_base_tile :: proc(m: ^Tile_Map, x, y: u32) -> ^tiled.Tile {
+	layer := &m.tilemap.layers[0]
+	return &layer.tiles[layer.width * y + x]
+}
+
+tilemap_width :: proc(m: ^Tile_Map) -> u32 {
+	return m.tilemap.layers[0].width
+}
+
+tilemap_height :: proc(m: ^Tile_Map) -> u32 {
+	return m.tilemap.layers[0].height
 }
 
 tilemap_draw :: proc(m: ^Tile_Map, offset: rl.Vector2) {
-	for x in 0 ..< m.width {
-		for y in 0 ..< m.height {
-			pos := rl.Vector2 {
-				offset.x + f32(x) * f32(TILE_SIZE),
-				offset.y + f32(y) * f32(TILE_SIZE),
+	for x in 0 ..< tilemap_width(m) {
+		for y in 0 ..< tilemap_height(m) {
+			dest := rl.Rectangle {
+				x      = offset.x + f32(x) * f32(TILE_SIZE),
+				y      = offset.y + f32(y) * f32(TILE_SIZE),
+				width  = TILE_SIZE,
+				height = TILE_SIZE,
 			}
-			tile := tilemap_get(m, x, y)
-			rl.DrawTextureV(tile.texture, pos, rl.WHITE)
+			tile := tilemap_get_base_tile(m, x, y)
+			rl.DrawTexturePro(tile.texture, tile.rect, dest, 0.0, 0.0, rl.WHITE)
 		}
 	}
 }
