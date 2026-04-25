@@ -32,7 +32,7 @@ world_overworld_update :: proc(w: ^World_Overworld, queue: ^Event_Queue) {
 }
 
 world_overworld_draw :: proc(w: ^World_Overworld) {
-	rl.ClearBackground(rl.SKYBLUE)
+	rl.ClearBackground(rl.BLACK)
 	rl.BeginMode2D(w.camera)
 	tilemap_draw(&w.tilemap, rl.Vector2(0))
 	player_draw(&w.player)

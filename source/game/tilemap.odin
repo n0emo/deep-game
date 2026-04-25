@@ -17,30 +17,46 @@ tilemap_make :: proc(tilemap: ^tiled.Tilemap) -> Tile_Map {
 tilemap_destroy :: proc(m: ^Tile_Map) {
 }
 
-tilemap_get_base_tile :: proc(m: ^Tile_Map, x, y: u32) -> ^tiled.Tile {
-	layer := &m.tilemap.layers[0]
-	return &layer.tiles[layer.width * y + x]
+@(private = "file")
+layer_get_tile :: proc(m: ^tiled.Tile_Layer, x, y: u32) -> ^tiled.Tile {
+	return &m.tiles[m.width * y + x]
 }
 
 tilemap_width :: proc(m: ^Tile_Map) -> u32 {
-	return m.tilemap.layers[0].width
+	return m.tilemap.width
 }
 
 tilemap_height :: proc(m: ^Tile_Map) -> u32 {
-	return m.tilemap.layers[0].height
+	return m.tilemap.height
 }
 
 tilemap_draw :: proc(m: ^Tile_Map, offset: rl.Vector2) {
-	for x in 0 ..< tilemap_width(m) {
-		for y in 0 ..< tilemap_height(m) {
-			dest := rl.Rectangle {
-				x      = offset.x + f32(x) * f32(TILE_SIZE),
-				y      = offset.y + f32(y) * f32(TILE_SIZE),
-				width  = TILE_SIZE,
-				height = TILE_SIZE,
+	for layer in m.tilemap.layers {
+		switch &l in layer {
+		case tiled.Tile_Layer:
+			for x in 0 ..< tilemap_width(m) {
+				for y in 0 ..< tilemap_height(m) {
+					dest := rl.Rectangle {
+						x      = offset.x + f32(x) * f32(TILE_SIZE),
+						y      = offset.y + f32(y) * f32(TILE_SIZE),
+						width  = TILE_SIZE,
+						height = TILE_SIZE,
+					}
+					tile := layer_get_tile(&l, x, y)
+					rl.DrawTexturePro(tile.texture, tile.rect, dest, 0.0, 0.0, rl.WHITE)
+				}
 			}
-			tile := tilemap_get_base_tile(m, x, y)
-			rl.DrawTexturePro(tile.texture, tile.rect, dest, 0.0, 0.0, rl.WHITE)
+		case tiled.Object_Layer:
+			for obj in l.objects {
+				rl.TraceLog(.INFO ,"Object: %s at (%f, %f) with size (%f, %f)", obj.name, obj.x, obj.y, obj.width, obj.height)
+				dest := rl.Rectangle {
+					x      = offset.x + obj.x,
+					y      = offset.y + obj.y,
+					width  = cast(f32) obj.width+1,
+					height = cast(f32) obj.height+1,
+				}
+				rl.DrawRectangleLinesEx(dest, 1.0, rl.RED)
+			}
 		}
 	}
 }
