@@ -1,207 +1,181 @@
 package game
 
+import "core:c"
 import rl "vendor:raylib"
 
-GameSettings :: struct {
-	volume:     f32,
-	music:      f32,
-	screensize: int,
-	ui_color:   string,
+@(private = "file")
+TEXT_SIZE :: 32
+
+@(private = "file")
+BUTTON_SIZE :: rl.Vector2{300, 50}
+
+@(private = "file")
+SLIDER_SIZE :: rl.Vector2{300, 50}
+
+@(private = "file")
+PANEL_SIZE :: rl.Vector2{550, 400}
+
+
+Main_Menu :: struct {
+	bg_texture: rl.Texture2D,
+	settings:   Main_Menu_Settings,
+	screen:     Main_Menu_Screen,
 }
 
-Window :: struct {
-	width:  f32,
-	height: f32,
-	x:      f32,
-	y:      f32,
+@(private = "file")
+Main_Menu_Settings :: struct {
+	master_volume: f32,
+	music_volume:  f32,
+	sfx_volume:    f32,
 }
 
-Element :: struct {
-	data: rawptr,
-	call: proc(win: ^Window, y_shift: f32, data: rawptr, g: ^Game_Memory),
+@(private = "file")
+Main_Menu_Screen :: enum {
+	Home,
+	Settings,
 }
 
-//settings: GameSettings
-settings := GameSettings{50, 50, 100, "RED"}
+main_menu_make :: proc(assets: ^Assets) -> Main_Menu {
+	return {
+		bg_texture = assets.sprites.main_menu,
+		settings = Main_Menu_Settings {
+			master_volume = 50.0,
+			music_volume = 100.0,
+			sfx_volume = 100.0,
+		},
+		screen = .Home,
+	}
+}
 
-draw_background :: proc(g: ^Game_Memory) {
-	rl.ClearBackground(rl.BLACK)
-	texture := g.assets.sprites.main_menu
+main_menu_ui :: proc(m: ^Main_Menu, queue: ^Event_Queue) {
+	menu_bg(m)
 
+	old_size := rl.GuiGetStyle(.DEFAULT, i32(rl.GuiDefaultProperty.TEXT_SIZE))
+	rl.GuiSetStyle(.DEFAULT, i32(rl.GuiDefaultProperty.TEXT_SIZE), TEXT_SIZE)
+	defer rl.GuiSetStyle(.DEFAULT, i32(rl.GuiDefaultProperty.TEXT_SIZE), old_size)
+
+	text_centered("Deep Game", 64, offset = {0, -300})
+	menu_panel(PANEL_SIZE)
+	switch m.screen {
+	case .Home:
+		menu_home_buttons(m, queue)
+	case .Settings:
+		menu_settings_buttons(m, queue)
+	}
+}
+
+main_menu_handle_event :: proc(m: ^Main_Menu, event: Event) {
+	#partial switch e in event {
+	case Event_Menu_Settings:
+		m.screen = .Settings
+	case Event_Menu_Home:
+		m.screen = .Home
+	}
+}
+
+@(private = "file")
+menu_panel :: proc(size: rl.Vector2) {
+	rec := rl.Rectangle {
+		x      = (cast(f32)rl.GetScreenWidth() - size.x) * 0.5,
+		y      = (cast(f32)rl.GetScreenHeight() - size.y) * 0.5,
+		width  = size.x,
+		height = size.y,
+	}
+
+	rl.DrawRectangleRounded(rec, 0.2, 3, rl.Fade(rl.BEIGE, 0.8))
+}
+
+@(private = "file")
+menu_home_buttons :: proc(m: ^Main_Menu, queue: ^Event_Queue) {
+	if button_centered("Start Game", BUTTON_SIZE, {0, -60}) {
+		event_dispatch(queue, Event_Start_Game{})
+	}
+
+	if button_centered("Settings", BUTTON_SIZE, {0, 0}) {
+		event_dispatch(queue, Event_Menu_Settings{})
+	}
+
+	if button_centered("Exit", BUTTON_SIZE, {0, 60}) {
+		event_dispatch(queue, Event_Exit{})
+	}
+}
+
+@(private = "file")
+menu_settings_buttons :: proc(m: ^Main_Menu, queue: ^Event_Queue) {
+	if slider_centered("Master", &m.settings.master_volume, SLIDER_SIZE, {0, -90}) {
+		event_dispatch(queue, Event_Change_Master_Volume{volume = m.settings.sfx_volume / 100.0})
+	}
+
+	if slider_centered("Music", &m.settings.music_volume, SLIDER_SIZE, {0, -30}) {
+		event_dispatch(queue, Event_Change_Music_Volume{volume = m.settings.sfx_volume / 100.0})
+	}
+
+	if slider_centered("SFX", &m.settings.sfx_volume, SLIDER_SIZE, {0, 30}) {
+		event_dispatch(queue, Event_Change_Sfx_Volume{volume = m.settings.sfx_volume / 100.0})
+	}
+
+	if button_centered("Back", BUTTON_SIZE, {0, 90}) {
+		event_dispatch(queue, Event_Menu_Home{})
+	}
+}
+
+
+@(private = "file")
+menu_bg :: proc(m: ^Main_Menu) {
 	sw := f32(rl.GetScreenWidth())
 	sh := f32(rl.GetScreenHeight())
-	tw := f32(texture.width)
-	th := f32(texture.height)
+	tw := f32(m.bg_texture.width)
+	th := f32(m.bg_texture.height)
 
 	scale := max(sw / tw, sh / th)
 
 	src := rl.Rectangle{0, 0, tw, th}
 	dst := rl.Rectangle{(sw - tw * scale) / 2, (sh - th * scale) / 2, tw * scale, th * scale}
 
-	rl.DrawTexturePro(texture, src, dst, {0, 0}, 0, rl.WHITE)
+	rl.DrawTexturePro(m.bg_texture, src, dst, {0, 0}, 0, rl.WHITE)
 }
 
-button_size :: proc(size: i32) {
-	rl.GuiSetStyle(.DEFAULT, i32(rl.GuiDefaultProperty.TEXT_SIZE), size)
+@(private = "file")
+text_centered :: proc(
+	text: cstring,
+	font_size: c.int,
+	offset: rl.Vector2 = {0, 0},
+	color: rl.Color = rl.WHITE,
+) {
+	text_width := rl.MeasureText(text, font_size)
+	x := c.int(f32(rl.GetScreenWidth() - text_width) * 0.5 + offset.x)
+	y := c.int(f32(rl.GetScreenHeight() - font_size) * 0.5 + offset.y)
+	rl.DrawText(text, x, y, font_size, color)
 }
 
-get_relative_width_center :: proc(w: ^Window) -> f32 {
-	return w.x + w.width / 2
-}
-
-get_relative_height_center :: proc(w: ^Window) -> f32 {
-	return w.y + w.height / 2
-}
-
-draw_btn_relative :: proc(win: ^Window, y: f32, text: cstring) -> bool {
+@(private = "file")
+button_centered :: proc(text: cstring, size: rl.Vector2, offset: rl.Vector2) -> bool {
 	return rl.GuiButton(
 		rl.Rectangle {
-			get_relative_width_center(win) - win.width / 4,
-			get_relative_height_center(win) - win.height / 1.5 + win.height * y * 0.003,
-			win.width / 2,
-			win.height / 10,
+			x = (cast(f32)rl.GetScreenWidth() - size.x) * 0.5 + offset.x,
+			y = (cast(f32)rl.GetScreenHeight() - size.y) * 0.5 + offset.y,
+			width = size.x,
+			height = size.y,
 		},
 		text,
 	)
 }
 
-draw_slide_relative :: proc(win: ^Window, y: f32, sound_type: ^f32, text: cstring) {
-	rl.GuiSliderBar(
+@(private = "file")
+slider_centered :: proc(text: cstring, value: ^f32, size: rl.Vector2, offset: rl.Vector2) -> bool {
+	value := rl.GuiSliderBar(
 		rl.Rectangle {
-			get_relative_width_center(win) - win.width / 8,
-			get_relative_height_center(win) - win.height / 1.5 + win.height * y * 0.003,
-			get_relative_width_center(win) * 0.35,
-			get_relative_height_center(win) * 0.07,
+			x = (cast(f32)rl.GetScreenWidth() - size.x) * 0.5 + offset.x,
+			y = (cast(f32)rl.GetScreenHeight() - size.y) * 0.5 + offset.y,
+			width = size.x,
+			height = size.y,
 		},
 		text,
-		rl.TextFormat("%.2f", sound_type^),
-		sound_type,
+		rl.TextFormat("%.0f%%", value^),
+		value,
 		0,
 		100,
 	)
-}
 
-btn_click :: proc(win: ^Window, name: cstring, y_shift: f32, menu: Game_State, g: ^Game_Memory) {
-	if draw_btn_relative(win, y_shift, name) {g.state = menu}
-}
-
-ButtonData :: struct {
-	name: cstring,
-	menu: Game_State,
-}
-
-button :: proc(name: cstring, menu: Game_State) -> Element {
-	data := new(ButtonData)
-	data.name = name
-	data.menu = menu
-
-
-	return Element {
-		data = data,
-		call = proc(win: ^Window, y_shift: f32, data: rawptr, g: ^Game_Memory) {
-			d := (^ButtonData)(data)
-			btn_click(win, d.name, y_shift, d.menu, g)
-		},
-	}
-}
-
-SliderData :: struct {
-	name:       cstring,
-	sound_type: ^f32,
-}
-
-slider :: proc(name: cstring, sound_type: ^f32) -> Element {
-	data := new(SliderData)
-	data.name = name
-	data.sound_type = sound_type
-
-	return Element {
-		data = data,
-		call = proc(win: ^Window, y_shift: f32, data: rawptr, g: ^Game_Memory) {
-			data := (^SliderData)(data)
-			draw_slide_relative(win, y_shift, data.sound_type, data.name)
-		},
-	}
-}
-
-settings_buttons_list: [dynamic]Element
-main_menu_buttons_list: [dynamic]Element
-volume_buttons_list: [dynamic]Element
-
-main_menu_init :: proc() {
-	append(&main_menu_buttons_list, button("Continue", .GAME))
-	append(&main_menu_buttons_list, button("New Game", .NEW_GAME))
-	append(&main_menu_buttons_list, button("Settings", .MENU_SETTINGS))
-	append(&main_menu_buttons_list, button("Exit", .EXIT))
-
-	append(&settings_buttons_list, button("Sound", .MENU_SOUND))
-	append(&settings_buttons_list, button("Graphics", .MENU_GRAPHICS))
-
-	append(&volume_buttons_list, slider("Volume", &settings.volume))
-	append(&volume_buttons_list, slider("Music", &settings.music))
-	append(&volume_buttons_list, button("Back", .MENU))
-}
-
-list_free :: proc(list: ^[dynamic]Element) {
-	for elem in list {
-		free(elem.data)
-	}
-	delete(list^)
-	list^ = {}
-}
-
-main_menu_destroy :: proc() {
-	list_free(&main_menu_buttons_list)
-	list_free(&settings_buttons_list)
-	list_free(&volume_buttons_list)
-}
-
-draw_main_menu_buttons :: proc(win: ^Window, g: ^Game_Memory) {
-	for i in 0 ..< len(main_menu_buttons_list) {
-		elem := main_menu_buttons_list[i]
-		elem.call(win, f32((i + 1) * 50) + 50, elem.data, g)
-	}
-}
-
-draw_settings_menu_buttons :: proc(win: ^Window, g: ^Game_Memory) {
-	for i in 0 ..< len(settings_buttons_list) {
-		elem := settings_buttons_list[i]
-		elem.call(win, f32((i + 1) * 50) + 50, elem.data, g)
-	}
-}
-
-draw_volume_menu_buttons :: proc(win: ^Window, g: ^Game_Memory) {
-	for i in 0 ..< len(volume_buttons_list) {
-		elem := volume_buttons_list[i]
-		elem.call(win, f32((i + 1) * 50) + 50, elem.data, g)
-	}
-}
-
-draw_float_window :: proc(menu_window: ^Window) {
-	rec := rl.Rectangle{menu_window.x, menu_window.y, menu_window.width, menu_window.height}
-
-	rl.DrawText(
-		"Main Menu",
-		i32(get_relative_width_center(menu_window)) - 50,
-		i32(get_relative_height_center(menu_window)) / 5,
-		20,
-		rl.BEIGE,
-	)
-
-	rl.DrawRectangleRounded(rec, 0.2, 3, rl.Fade(rl.BEIGE, 0.8))
-}
-
-draw_main_menu :: proc(g: ^Game_Memory) -> Window {
-	width: f32 = f32(rl.GetScreenWidth()) / 1.8
-	height: f32 = f32(rl.GetScreenHeight()) / 1.8
-	x := f32(rl.GetScreenWidth()) / 2.0 - width / 2.0
-	y := f32(rl.GetScreenHeight()) / 2.0 - height / 2.0
-	//    menu_init()
-	menu_window := Window{width, height, x, y}
-	rl.DrawFPS(10, 10)
-	rl.BeginDrawing()
-	button_size(32)
-	draw_background(g)
-	draw_float_window(&menu_window)
-	return menu_window
+	return value == 1
 }

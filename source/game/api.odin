@@ -36,7 +36,7 @@ api_should_run :: proc() -> bool {
 		}
 	}
 
-	return game_memory.run
+	return game_memory.state != .Exit
 }
 
 @(export, link_name = "game_shutdown")
