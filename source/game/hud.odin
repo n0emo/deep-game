@@ -3,9 +3,9 @@ package game
 import rl "vendor:raylib"
 
 PlayerStats :: struct {
-    alive : bool,
-    shield : int,
-    kills : int,
+	alive:  bool,
+	shield: int,
+	kills:  int,
 }
 
 Hud :: struct {
@@ -15,32 +15,43 @@ Hud :: struct {
 	y:      f32,
 }
 
-stats : PlayerStats
-window : Hud
+stats: PlayerStats
+hud: Hud
 
 hud_init :: proc() {
-    stats = PlayerStats {
-        alive = true,
-        shield = 0,
-        kills = 0,
-    }
-    window = Hud {
-        width = f32(rl.GetScreenWidth()),
-        height = f32(rl.GetScreenHeight()),
-        x = 0,
-        y = 0,
-    }
+	stats = PlayerStats {
+		alive  = true,
+		shield = 3,
+		kills  = 0,
+	}
+	hud = Hud {
+		width  = f32(rl.GetScreenWidth()),
+		height = f32(rl.GetScreenHeight()),
+		x      = 0,
+		y      = 0,
+	}
 }
 
-draw_hud :: proc() {
-	width: f32 = f32(rl.GetScreenWidth()) / 1.8
-	height: f32 = f32(rl.GetScreenHeight()) / 1.8
-	x := f32(rl.GetScreenWidth()) / 2.0 - width / 2.0
-	y := f32(rl.GetScreenHeight()) / 2.0 - height / 2.0
+draw_hp :: proc(g: ^Game_Memory) {
+	texture := g.assets.sprites.heart
+	pos := rl.Vector2{50, f32(rl.GetScreenHeight()) - 100}
+	rl.DrawTextureEx(texture, pos, 0, 9, rl.WHITE)
 
+	texture = g.assets.sprites.shield
+	for i in 0 ..< stats.shield {
+		pos = rl.Vector2{50 + 85 * (f32(i) + 1), f32(rl.GetScreenHeight()) - 100}
+		rl.DrawTextureEx(texture, pos, 0, 9, rl.WHITE)
+	}
+}
 
-	rl.BeginDrawing()
-	rec := rl.Rectangle{x, y, width, height}
-    
-	rl.DrawRectangleRounded(rec, 0.2, 3, rl.Fade(rl.BLACK, 0.7))
+draw_stats :: proc() {
+	pos := rl.Vector2{f32(rl.GetScreenWidth()) - 250, f32(rl.GetScreenHeight()) - 80}
+
+	s := rl.TextFormat("Score: %d", stats.kills)
+	rl.DrawText(s, i32(pos.x), i32(pos.y), 45, rl.BLACK)
+}
+
+draw_hud :: proc(g: ^Game_Memory) {
+	draw_stats()
+	draw_hp(g)
 }
