@@ -1,6 +1,7 @@
 package game
 
 import atlas "../atlas"
+import "core:fmt"
 import "core:math/linalg"
 import rl "vendor:raylib"
 
@@ -21,7 +22,9 @@ world_overworld_make :: proc(assets: ^Assets) -> World_Overworld {
 	if !ok {
 		panic("Could not load tilemap")
 	}
-	player := player_make(&assets.sprites.player)
+	fmt.println(tilemap.spawnpoint)
+	player_tile := [2]i32{i32(tilemap.spawnpoint.x), i32(tilemap.spawnpoint.y)} / TILE_SIZE
+	player := player_make(&assets.sprites.player, player_tile)
 	camera := rl.Camera2D{}
 
 	return {tilemap = tilemap, player = player, camera = camera}
@@ -34,6 +37,13 @@ world_overworld_destroy :: proc(w: ^World_Overworld) {
 world_overworld_update :: proc(w: ^World_Overworld, queue: ^Event_Queue) {
 	player_update(&w.player, queue)
 	world_update_camera(w)
+
+	player_rect := rl.Rectangle{w.player.pos.x, w.player.pos.y, TILE_SIZE, TILE_SIZE}
+	if obj, ok := tilemap_is_collides_with_object(&w.tilemap, player_rect); ok {
+		if _, is_transition := obj.properties.(Object_Transition); is_transition {
+			event_dispatch(queue, Event_Menu{})
+		}
+	}
 }
 
 world_overworld_draw :: proc(w: ^World_Overworld) {
@@ -87,7 +97,7 @@ Player_Moving :: struct {
 }
 
 @(private = "file")
-player_make :: proc(atlas: ^atlas.Atlas) -> Overworld_Player {
+player_make :: proc(atlas: ^atlas.Atlas, tile: [2]i32) -> Overworld_Player {
 	animations_idle := [Direction]Animation {
 		.Up    = animation_make(
 			atlas.texture,
@@ -167,7 +177,7 @@ player_make :: proc(atlas: ^atlas.Atlas) -> Overworld_Player {
 	}
 
 	player := Overworld_Player {
-		tile              = {2, 2},
+		tile              = tile,
 		state             = Player_Idle{},
 		animations_idle   = animations_idle,
 		animations_moving = animations_moving,

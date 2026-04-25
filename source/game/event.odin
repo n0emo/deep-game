@@ -6,6 +6,8 @@ Event_Exit :: struct {}
 
 Event_Menu_Settings :: struct {}
 
+Event_Menu :: struct {}
+
 Event_Menu_Home :: struct {}
 
 Event_Fight :: struct {}
@@ -37,8 +39,9 @@ Event_Player_Stopped :: struct {
 Event :: union {
 	Event_Start_Game,
 	Event_Exit,
-	Event_Menu_Settings,
+	Event_Menu,
 	Event_Menu_Home,
+	Event_Menu_Settings,
 	Event_Change_Master_Volume,
 	Event_Change_Music_Volume,
 	Event_Change_Sfx_Volume,

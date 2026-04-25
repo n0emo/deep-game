@@ -76,6 +76,8 @@ game_handle_event :: proc(g: ^Game_Memory, event: Event) {
 		g.state = .Exit
 	case Event_Start_Game:
 		g.state = .Game
+	case Event_Menu:
+		g.state = .Menu
 	}
 
 	switch g.state {

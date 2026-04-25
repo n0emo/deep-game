@@ -10,6 +10,8 @@ Tile_Map :: struct {
 	base_layer: ^tiled.Tile_Layer,
 	prop_layer: ^tiled.Tile_Layer,
 	obj_layer:  ^tiled.Object_Layer,
+	objects:    map[int]Object,
+	spawnpoint: Object,
 }
 
 tilemap_make :: proc(tilemap: ^tiled.Tilemap) -> (tm: Tile_Map, ok: bool) {
@@ -17,10 +19,18 @@ tilemap_make :: proc(tilemap: ^tiled.Tilemap) -> (tm: Tile_Map, ok: bool) {
 	tm.base_layer = find_tile_layer(tilemap, "base") or_return
 	tm.prop_layer = find_tile_layer(tilemap, "prop") or_return
 	tm.obj_layer = find_obj_layer(tilemap, "object") or_return
+	tm.objects = make(map[int]Object, len(tm.obj_layer.objects))
+	for obj, i in tm.obj_layer.objects {
+		tm.objects[obj.id] = object_make(obj)
+		if _, is_sp := tm.objects[i].properties.(Object_Spawnpoint); is_sp {
+			tm.spawnpoint = tm.objects[i]
+		}
+	}
 	return tm, true
 }
 
 tilemap_destroy :: proc(m: ^Tile_Map) {
+	delete(m.objects)
 }
 
 tilemap_width :: proc(m: ^Tile_Map) -> u32 {
@@ -47,6 +57,22 @@ tilemap_tile_passable :: proc(m: ^Tile_Map, tile: [2]i32) -> bool {
 
 	tile := layer_get_tile(m.base_layer, u32(tile.x), u32(tile.y))
 	return tile.type == "terrain"
+}
+
+tilemap_is_collides_with_object :: proc(
+	m: ^Tile_Map,
+	rect: rl.Rectangle,
+) -> (
+	obj: Object,
+	ok: bool,
+) {
+	for _, o in m.objects {
+		o_rect := rl.Rectangle{o.x, o.y, o.width, o.height}
+		if rl.CheckCollisionRecs(rect, o_rect) {
+			return o, true
+		}
+	}
+	return Object{}, false
 }
 
 @(private = "file")

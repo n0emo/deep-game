@@ -54,7 +54,7 @@ tilemap_load :: proc(
 	layers := make([]Tilemap_Layer, len(desc.layers), context.temp_allocator)
 	for layer_desc, layer_index in desc.layers {
 		switch l_desc in layer_desc {
-		case Tile_Descriptor_Layer:
+		case Tile_Layer_Descriptor:
 			layer := Tile_Layer {
 				id      = l_desc.id,
 				x       = l_desc.x,
@@ -129,17 +129,23 @@ Tilemap_Layer :: union {
 }
 
 Object :: struct {
-	height:   int,
-	id:       int,
-	name:     string,
-	opacity:  int,
-	point:    bool,
-	rotation: int,
-	type:     string,
-	visible:  bool,
-	width:    int,
-	x:        f32,
-	y:        f32,
+	height:     int,
+	id:         int,
+	name:       string,
+	opacity:    int,
+	point:      bool,
+	rotation:   int,
+	type:       string,
+	visible:    bool,
+	width:      int,
+	x:          f32,
+	y:          f32,
+	properties: map[string]Object_Value,
+}
+
+Object_Value :: union {
+	string,
+	int,
 }
 
 Object_Layer :: struct {
@@ -255,7 +261,7 @@ tilemap_descriptor_load :: proc(
 
 			switch layer_type {
 			case "tilelayer":
-				layer := Tile_Descriptor_Layer{}
+				layer := Tile_Layer_Descriptor{}
 				if v, fe := obj["id"].(json.Float); fe {layer.id = u32(v)}
 				if v, fe := obj["x"].(json.Float); fe {layer.x = u32(v)}
 				if v, fe := obj["y"].(json.Float); fe {layer.y = u32(v)}
@@ -308,6 +314,22 @@ tilemap_descriptor_load :: proc(
 						   ie {layer.objects[oi].point = bool(v)}
 						if v, ie := oobj["rotation"].(json.Float);
 						   ie {layer.objects[oi].rotation = int(v)}
+						if v, ie := oobj["properties"].(json.Array); ie {
+							layer.objects[oi].properties = make(map[string]Object_Value)
+							props := &layer.objects[oi].properties
+							for prop in v {
+								prop_obj := prop.(json.Object) or_continue
+								type := prop_obj["type"].(json.String) or_continue
+								name := prop_obj["name"].(json.String) or_continue
+								prop_val := prop_obj["value"]
+								switch type {
+								case "string":
+									props[name] = prop_val.(json.String) or_continue
+								case "int":
+									props[name] = cast(int)prop_val.(json.Float) or_continue
+								}
+							}
+						}
 					}
 				}
 				append(&layers, Tilemap_Descriptor_Layer(layer))
@@ -329,7 +351,7 @@ tilemap_descriptor_unload :: proc(desc: ^Tilemap_Descriptor) {
 	for l_desc in desc.layers {
 
 		switch layer_desc in l_desc {
-		case Tile_Descriptor_Layer:
+		case Tile_Layer_Descriptor:
 			for &tile_id in layer_desc.data {
 				_ = tile_id
 			}
@@ -374,12 +396,12 @@ Object_Layer_Descriptor :: struct {
 
 @(private = "file")
 Tilemap_Descriptor_Layer :: union {
-	Tile_Descriptor_Layer,
+	Tile_Layer_Descriptor,
 	Object_Layer_Descriptor,
 }
 
 @(private = "file")
-Tile_Descriptor_Layer :: struct {
+Tile_Layer_Descriptor :: struct {
 	data:    []u32,
 	height:  u32,
 	id:      u32,
