@@ -21,8 +21,26 @@ Element :: struct {
 	call: proc(win: ^Window, y_shift: f32, data: rawptr, g: ^Game_Memory),
 }
 
+ElementList :: struct {
+	settings_buttons_list:  [dynamic]Element,
+	main_menu_buttons_list: [dynamic]Element,
+	volume_buttons_list:    [dynamic]Element,
+	graphics_buttons_list:  [dynamic]Element,
+}
+
+ButtonData :: struct {
+	name: cstring,
+	menu: Game_State,
+}
+
+SliderData :: struct {
+	name:       cstring,
+	sound_type: ^f32,
+}
+
 //settings: GameSettings
 settings := GameSettings{50, 50, 100, "RED"}
+element_list: ElementList
 
 draw_background :: proc(g: ^Game_Memory) {
 	rl.ClearBackground(rl.BLACK)
@@ -81,33 +99,18 @@ draw_slide_relative :: proc(win: ^Window, y: f32, sound_type: ^f32, text: cstrin
 	)
 }
 
-btn_click :: proc(win: ^Window, name: cstring, y_shift: f32, menu: Game_State, g: ^Game_Memory) {
-	if draw_btn_relative(win, y_shift, name) {g.state = menu}
-}
-
-ButtonData :: struct {
-	name: cstring,
-	menu: Game_State,
-}
-
 button :: proc(name: cstring, menu: Game_State) -> Element {
 	data := new(ButtonData)
 	data.name = name
 	data.menu = menu
 
-
 	return Element {
 		data = data,
 		call = proc(win: ^Window, y_shift: f32, data: rawptr, g: ^Game_Memory) {
 			d := (^ButtonData)(data)
-			btn_click(win, d.name, y_shift, d.menu, g)
+			if draw_btn_relative(win, y_shift, d.name) {g.state = d.menu}
 		},
 	}
-}
-
-SliderData :: struct {
-	name:       cstring,
-	sound_type: ^f32,
 }
 
 slider :: proc(name: cstring, sound_type: ^f32) -> Element {
@@ -124,22 +127,21 @@ slider :: proc(name: cstring, sound_type: ^f32) -> Element {
 	}
 }
 
-settings_buttons_list: [dynamic]Element
-main_menu_buttons_list: [dynamic]Element
-volume_buttons_list: [dynamic]Element
-
 main_menu_init :: proc() {
-	append(&main_menu_buttons_list, button("Continue", .GAME))
-	append(&main_menu_buttons_list, button("New Game", .NEW_GAME))
-	append(&main_menu_buttons_list, button("Settings", .MENU_SETTINGS))
-	append(&main_menu_buttons_list, button("Exit", .EXIT))
+	append(&element_list.main_menu_buttons_list, button("Continue", .GAME))
+	append(&element_list.main_menu_buttons_list, button("New Game", .NEW_GAME))
+	append(&element_list.main_menu_buttons_list, button("Settings", .MENU_SETTINGS))
+	append(&element_list.main_menu_buttons_list, button("Exit", .EXIT))
 
-	append(&settings_buttons_list, button("Sound", .MENU_SOUND))
-	append(&settings_buttons_list, button("Graphics", .MENU_GRAPHICS))
+	append(&element_list.settings_buttons_list, button("Sound", .MENU_SOUND))
+	append(&element_list.settings_buttons_list, button("Graphics", .MENU_GRAPHICS))
+	append(&element_list.settings_buttons_list, button("Back", .MENU))
 
-	append(&volume_buttons_list, slider("Volume", &settings.volume))
-	append(&volume_buttons_list, slider("Music", &settings.music))
-	append(&volume_buttons_list, button("Back", .MENU))
+	append(&element_list.volume_buttons_list, slider("Volume", &settings.volume))
+	append(&element_list.volume_buttons_list, slider("Music", &settings.music))
+	append(&element_list.volume_buttons_list, button("Back", .MENU))
+
+	append(&element_list.graphics_buttons_list, button("Back", .MENU))
 }
 
 list_free :: proc(list: ^[dynamic]Element) {
@@ -151,30 +153,33 @@ list_free :: proc(list: ^[dynamic]Element) {
 }
 
 main_menu_destroy :: proc() {
-	list_free(&main_menu_buttons_list)
-	list_free(&settings_buttons_list)
-	list_free(&volume_buttons_list)
+	list_free(&element_list.main_menu_buttons_list)
+	list_free(&element_list.settings_buttons_list)
+	list_free(&element_list.volume_buttons_list)
+	list_free(&element_list.graphics_buttons_list)
 }
 
-draw_main_menu_buttons :: proc(win: ^Window, g: ^Game_Memory) {
-	for i in 0 ..< len(main_menu_buttons_list) {
-		elem := main_menu_buttons_list[i]
+draw_element_list :: proc(win: ^Window, g: ^Game_Memory, element_list: ^[dynamic]Element) {
+	for i in 0 ..< len(element_list) {
+		elem := element_list[i]
 		elem.call(win, f32((i + 1) * 50) + 50, elem.data, g)
 	}
 }
 
-draw_settings_menu_buttons :: proc(win: ^Window, g: ^Game_Memory) {
-	for i in 0 ..< len(settings_buttons_list) {
-		elem := settings_buttons_list[i]
-		elem.call(win, f32((i + 1) * 50) + 50, elem.data, g)
-	}
+draw_main_menu_buttons :: proc(win: ^Window, g: ^Game_Memory, element_list: ^ElementList) {
+	draw_element_list(win, g, &element_list.main_menu_buttons_list)
 }
 
-draw_volume_menu_buttons :: proc(win: ^Window, g: ^Game_Memory) {
-	for i in 0 ..< len(volume_buttons_list) {
-		elem := volume_buttons_list[i]
-		elem.call(win, f32((i + 1) * 50) + 50, elem.data, g)
-	}
+draw_settings_menu_buttons :: proc(win: ^Window, g: ^Game_Memory, element_list: ^ElementList) {
+	draw_element_list(win, g, &element_list.settings_buttons_list)
+}
+
+draw_volume_menu_buttons :: proc(win: ^Window, g: ^Game_Memory, element_list: ^ElementList) {
+	draw_element_list(win, g, &element_list.volume_buttons_list)
+}
+
+draw_graphics_menu_buttons :: proc(win: ^Window, g: ^Game_Memory, element_list: ^ElementList) {
+	draw_element_list(win, g, &element_list.graphics_buttons_list)
 }
 
 draw_float_window :: proc(menu_window: ^Window) {

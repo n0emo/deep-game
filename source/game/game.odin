@@ -23,6 +23,7 @@ Game_State :: enum {
 	MENU_GRAPHICS,
 	EXIT,
 }
+
 game_make :: proc() -> ^Game_Memory {
 	g := new(Game_Memory)
 	assets := assets_load()
@@ -69,18 +70,18 @@ game_start :: proc(g: ^Game_Memory) {
 }
 
 game_menu :: proc(g: ^Game_Memory) {
-	if len(main_menu_buttons_list) == 0 {
+	if len(element_list.main_menu_buttons_list) == 0 {
 		main_menu_init()
 	}
 	menu_window := draw_main_menu(g)
-	draw_main_menu_buttons(&menu_window, g)
-	g.state = Game_State.MENU
+	draw_main_menu_buttons(&menu_window, g, &element_list)
+	//g.state = Game_State.MENU
 }
 
 game_hud :: proc(g: ^Game_Memory) {
 	//hud_init()
 	draw_hud(g)
-	g.state = Game_State.FIGHT
+	//g.state = Game_State.FIGHT
 }
 
 game_draw :: proc(g: ^Game_Memory) {
@@ -102,14 +103,14 @@ game_draw :: proc(g: ^Game_Memory) {
 		game_hud(g)
 	case .MENU_SETTINGS:
 		menu_window := draw_main_menu(g)
-		draw_main_menu_buttons(&menu_window, g)
+		draw_settings_menu_buttons(&menu_window, g, &element_list)
 	case .NEW_GAME:
-		fmt.println(g.state)
 	case .MENU_SOUND:
 		menu_window := draw_main_menu(g)
-		draw_volume_menu_buttons(&menu_window, g)
+		draw_volume_menu_buttons(&menu_window, g, &element_list)
 	case .MENU_GRAPHICS:
-		draw_main_menu(g)
+		menu_window := draw_main_menu(g)
+		draw_graphics_menu_buttons(&menu_window, g, &element_list)
 	case .EXIT:
 		g.run = false
 	}
@@ -124,7 +125,6 @@ game_draw :: proc(g: ^Game_Memory) {
 	// case Settings:
 	// 	menu()
 	// }
-
 	rl.EndMode2D()
 
 	rl.EndDrawing()
