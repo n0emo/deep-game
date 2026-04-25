@@ -37,9 +37,16 @@ tilemap_draw :: proc(m: ^Tile_Map, offset: rl.Vector2) {
 	draw_obj_layer(m, m.obj_layer, offset)
 }
 
-Tile :: struct {
-	texture:     rl.Texture2D,
-	is_passable: bool,
+tilemap_tile_passable :: proc(m: ^Tile_Map, tile: [2]i32) -> bool {
+	if tile.x < 0 ||
+	   tile.x >= i32(tilemap_width(m)) ||
+	   tile.y < 0 ||
+	   tile.y >= i32(tilemap_height(m)) {
+		return false
+	}
+
+	tile := layer_get_tile(m.base_layer, u32(tile.x), u32(tile.y))
+	return tile.type == "terrain"
 }
 
 @(private = "file")

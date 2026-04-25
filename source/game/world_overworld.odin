@@ -49,9 +49,13 @@ world_overworld_ui :: proc(w: ^World_Overworld, queue: ^Event_Queue) {}
 world_overworld_handle_event :: proc(w: ^World_Overworld, event: Event) {
 	#partial switch e in event {
 	case Event_Input_Go:
-		// TODO: Check potential collision here
-		if _, ok := w.player.state.(Player_Idle); ok {
-			player_start_moving(&w.player, e.direction)
+		next_tile := w.player.tile + direction_to_vec_i32(e.direction)
+		if tilemap_tile_passable(&w.tilemap, next_tile) {
+			if _, ok := w.player.state.(Player_Idle); ok {
+				player_start_moving(&w.player, e.direction)
+			}
+		} else {
+			w.player.direction = e.direction
 		}
 	}
 }
@@ -163,7 +167,7 @@ player_make :: proc(atlas: ^atlas.Atlas) -> Overworld_Player {
 	}
 
 	player := Overworld_Player {
-		pos               = rl.Vector2(0),
+		tile              = {2, 2},
 		state             = Player_Idle{},
 		animations_idle   = animations_idle,
 		animations_moving = animations_moving,
