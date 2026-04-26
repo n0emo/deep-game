@@ -20,6 +20,7 @@ api_init_window :: proc() {
 	rl.SetWindowPosition(200, 200)
 	rl.SetTargetFPS(500)
 	rl.SetExitKey(nil)
+	rl.InitAudioDevice()
 }
 
 @(export, link_name = "game_init")
@@ -46,6 +47,7 @@ api_shutdown :: proc() {
 
 @(export, link_name = "game_shutdown_window")
 api_shutdown_window :: proc() {
+	rl.CloseAudioDevice()
 	rl.CloseWindow()
 }
 

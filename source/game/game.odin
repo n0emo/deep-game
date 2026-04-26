@@ -12,6 +12,7 @@ Game_Memory :: struct {
 	main_menu:   Main_Menu,
 	event_queue: Event_Queue,
 	input:       Input,
+	audio:       Audio_System,
 }
 
 Game_State :: enum {
@@ -29,6 +30,7 @@ game_make :: proc() -> ^Game_Memory {
 	assets := assets_load()
 	main_menu := main_menu_make(assets)
 	input := input_make()
+	audio := audio_system_make(assets)
 
 	g^ = Game_Memory {
 		assets      = assets,
@@ -36,6 +38,7 @@ game_make :: proc() -> ^Game_Memory {
 		state       = .Menu,
 		event_queue = event_queue,
 		input       = input,
+		audio       = audio,
 	}
 	return g
 }
@@ -52,6 +55,7 @@ ui_camera :: proc() -> rl.Camera2D {
 
 game_update :: proc(g: ^Game_Memory) {
 	input_update(&g.input, &g.event_queue)
+	audio_system_update(&g.audio)
 
 	for {
 		event := event_pop(&g.event_queue) or_break
@@ -68,6 +72,8 @@ game_update :: proc(g: ^Game_Memory) {
 }
 
 game_handle_event :: proc(g: ^Game_Memory, event: Event) {
+	audio_system_handle_event(&g.audio, event)
+
 	#partial switch e in event {
 	case Event_Exit:
 		g.state = .Exit

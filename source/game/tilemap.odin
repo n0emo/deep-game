@@ -44,7 +44,7 @@ tilemap_height :: proc(m: ^Tile_Map) -> u32 {
 tilemap_draw :: proc(m: ^Tile_Map, offset: rl.Vector2) {
 	draw_tile_layer(m, m.base_layer, offset)
 	draw_tile_layer(m, m.prop_layer, offset)
-	draw_obj_layer(m, m.obj_layer, offset)
+	draw_objects(m, offset)
 }
 
 tilemap_tile_passable :: proc(m: ^Tile_Map, tile: [2]i32) -> bool {
@@ -78,12 +78,6 @@ tilemap_is_collides_with_object :: proc(
 tilemap_delete_object :: proc(m: ^Tile_Map, id: int) {
 	if id in m.objects {
 		delete_key(&m.objects, id)
-		for &o in m.obj_layer.objects {
-			if o.id == id {
-				o.visible = false
-				break
-			}
-		}
 	}
 }
 
@@ -104,17 +98,13 @@ draw_tile_layer :: proc(m: ^Tile_Map, l: ^tiled.Tile_Layer, offset: rl.Vector2) 
 }
 
 @(private = "file")
-draw_obj_layer :: proc(m: ^Tile_Map, l: ^tiled.Object_Layer, offset: rl.Vector2) {
-	for obj in l.objects {
-		if !obj.visible {
-			continue
-		}
-
+draw_objects :: proc(m: ^Tile_Map, offset: rl.Vector2) {
+	for _, obj in m.objects {
 		dest := rl.Rectangle {
 			x      = offset.x + obj.x,
 			y      = offset.y + obj.y,
-			width  = cast(f32)obj.width + 1,
-			height = cast(f32)obj.height + 1,
+			width  = obj.width + 1,
+			height = obj.height + 1,
 		}
 		rl.DrawRectangleLinesEx(dest, 1.0, rl.RED)
 	}

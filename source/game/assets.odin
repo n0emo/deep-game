@@ -4,10 +4,12 @@ import "../atlas"
 import "../tiled"
 import "core:fmt"
 import "core:path/slashpath"
+import "core:strings"
 import rl "vendor:raylib"
 
 Assets :: struct {
 	sprites:         Assets_Sprites,
+	audio:           Assets_Audio,
 	tiled_loader:    ^tiled.Loader,
 	tilemap_level_1: tiled.Tilemap,
 }
@@ -15,6 +17,7 @@ Assets :: struct {
 assets_load :: proc(assets_dir: string = "assets") -> ^Assets {
 	assets := new(Assets)
 	assets.sprites = assets_sprites_load(fmt.tprintf("%s/%s", assets_dir, "sprites"))
+	assets.audio = assets_audio_load(slashpath.join({assets_dir, "audio"}, context.temp_allocator))
 	assets.tiled_loader = tiled.loader_make()
 	tilemap_level_1, _ := tiled.tilemap_load(assets.tiled_loader, "./assets/tilemaps/level-1.tmj")
 	assets.tilemap_level_1 = tilemap_level_1
@@ -24,6 +27,7 @@ assets_load :: proc(assets_dir: string = "assets") -> ^Assets {
 
 assets_unload :: proc(assets: ^Assets) {
 	assets_sprites_unload(&assets.sprites)
+	assets_audio_unload(&assets.audio)
 	tiled.loader_destroy(assets.tiled_loader)
 	free(assets)
 }
@@ -34,6 +38,10 @@ Assets_Sprites :: struct {
 	main_menu: rl.Texture2D,
 	heart:     rl.Texture2D,
 	shield:    rl.Texture2D,
+}
+
+Assets_Audio :: struct {
+	music_battle: rl.Music,
 }
 
 @(private = "file")
@@ -69,4 +77,20 @@ load_atlas :: proc(sprites_dir: string, name: string) -> atlas.Atlas {
 		panic(fmt.tprintf("Could not load atlas: %v", err))
 	}
 	return atlas
+}
+
+@(private = "file")
+assets_audio_load :: proc(audio_dir: string) -> Assets_Audio {
+	return {music_battle = load_music(audio_dir, "music-battle.ogg")}
+}
+
+assets_audio_unload :: proc(audio: ^Assets_Audio) {
+	rl.UnloadMusicStream(audio.music_battle)
+}
+
+@(private = "file")
+load_music :: proc(sprites_dir: string, name: string) -> rl.Music {
+	path := slashpath.join({sprites_dir, name}, context.temp_allocator)
+	cpath := strings.clone_to_cstring(path, context.temp_allocator)
+	return rl.LoadMusicStream(cpath)
 }
