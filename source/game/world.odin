@@ -32,7 +32,7 @@ world_make :: proc(assets: ^Assets) -> ^World {
 	world := new(World)
 	world^ = {
 		state           = .Transitioning,
-		transition       = world_transitioning_make(assets),
+		transition      = world_transitioning_make(assets),
 		tilemaps        = tilemaps,
 		current_tilemap = -1,
 		assets          = assets,
@@ -117,4 +117,3 @@ world_handle_event :: proc(w: ^World, event: Event) {
 		w.state = .Overworld
 	}
 }
-

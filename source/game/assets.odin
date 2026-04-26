@@ -42,22 +42,14 @@ assets_unload :: proc(assets: ^Assets) {
 }
 
 Assets_Sprites :: struct {
-<<<<<<< HEAD
-	player:           atlas.Atlas,
-	grass:            rl.Texture2D,
-	main_menu:        rl.Texture2D,
-	heart:            rl.Texture2D,
-	shield:           rl.Texture2D,
-	fight_background: rl.Texture2D,
-=======
-	player:    atlas.Atlas,
-	fight_entity: atlas.Atlas,
-	grass:     rl.Texture2D,
-	main_menu: rl.Texture2D,
-	heart:     rl.Texture2D,
-	shield:    rl.Texture2D,
+	player:               atlas.Atlas,
+	grass:                rl.Texture2D,
+	main_menu:            rl.Texture2D,
+	heart:                rl.Texture2D,
+	shield:               rl.Texture2D,
+	fight_background:     rl.Texture2D,
+	fight_entity:         atlas.Atlas,
 	player_transitioning: rl.Texture2D,
->>>>>>> 0746b90 (transitioning state)
 }
 
 Assets_Audio :: struct {
@@ -91,12 +83,9 @@ assets_sprites_load :: proc(sprites_dir: string) -> Assets_Sprites {
 		main_menu = load_sprite(sprites_dir, "main_menu.png"),
 		heart = load_sprite(sprites_dir, "heart.png"),
 		shield = load_sprite(sprites_dir, "shield.png"),
-<<<<<<< HEAD
 		fight_background = load_sprite(sprites_dir, "fight-background.png"),
-=======
 		fight_entity = load_atlas(sprites_dir, "fight-entity.json"),
 		player_transitioning = load_sprite(sprites_dir, "player-main-menu.png"),
->>>>>>> 0746b90 (transitioning state)
 	}
 }
 
@@ -108,11 +97,8 @@ assets_sprites_unload :: proc(sprites: ^Assets_Sprites) {
 	rl.UnloadTexture(sprites.main_menu)
 	rl.UnloadTexture(sprites.heart)
 	rl.UnloadTexture(sprites.shield)
-<<<<<<< HEAD
 	rl.UnloadTexture(sprites.fight_background)
-=======
 	rl.UnloadTexture(sprites.player_transitioning)
->>>>>>> 0746b90 (transitioning state)
 }
 
 @(private = "file")

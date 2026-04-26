@@ -2,15 +2,15 @@ package game
 
 import rl "vendor:raylib"
 
-SCALE ::  5
+SCALE :: 5
 World_Transitioning :: struct {
-	player:    rl.Texture2D,
-	x:         f32,
-	y:         f32,
-	elapsed:   f32,
-	duration:  f32,
-	end_y:     f32,
-	finished:  bool,
+	player:   rl.Texture2D,
+	x:        f32,
+	y:        f32,
+	elapsed:  f32,
+	duration: f32,
+	end_y:    f32,
+	finished: bool,
 }
 
 world_transitioning_make :: proc(assets: ^Assets) -> World_Transitioning {
@@ -18,7 +18,7 @@ world_transitioning_make :: proc(assets: ^Assets) -> World_Transitioning {
 	center_x := (f32(rl.GetScreenWidth()) - f32(player.width) * f32(SCALE)) / 2
 	end_y := f32(rl.GetScreenHeight()) - f32(player.height) * f32(SCALE)
 
-	return World_Transitioning{
+	return World_Transitioning {
 		player = player,
 		x = center_x,
 		y = 0,
