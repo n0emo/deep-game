@@ -2,6 +2,7 @@ package game
 
 World :: struct {
 	state:           World_State,
+	transition:      World_Transitioning,
 	overworld:       World_Overworld,
 	fight:           World_Fight,
 	tilemaps:        [2]Tile_Map,
@@ -11,6 +12,7 @@ World :: struct {
 
 @(private = "file")
 World_State :: enum {
+	Transitioning,
 	Overworld,
 	Fight,
 }
@@ -29,9 +31,10 @@ world_make :: proc(assets: ^Assets) -> ^World {
 
 	world := new(World)
 	world^ = {
-		state           = .Overworld,
+		state           = .Transitioning,
+		transition       = world_transitioning_make(assets),
 		tilemaps        = tilemaps,
-		current_tilemap = 0,
+		current_tilemap = -1,
 		assets          = assets,
 	}
 	world.overworld = world_overworld_make(assets, &world.tilemaps[0], world.current_tilemap + 1)
@@ -40,6 +43,7 @@ world_make :: proc(assets: ^Assets) -> ^World {
 }
 
 world_destroy :: proc(w: ^World) {
+	world_transitioning_destroy(&w.transition)
 	world_overworld_destroy(&w.overworld)
 	free(w)
 }
@@ -55,6 +59,8 @@ world_update :: proc(w: ^World, queue: ^Event_Queue) {
 		world_overworld_update(&w.overworld, queue)
 	case .Fight:
 		world_fight_update(&w.fight, queue)
+	case .Transitioning:
+		world_transitioning_update(&w.transition, queue)
 	}
 }
 
@@ -64,6 +70,8 @@ world_draw :: proc(w: ^World) {
 		world_overworld_draw(&w.overworld)
 	case .Fight:
 		world_fight_draw(&w.fight)
+	case .Transitioning:
+		world_transitioning_draw(&w.transition)
 	}
 }
 
@@ -73,6 +81,8 @@ world_ui :: proc(w: ^World, queue: ^Event_Queue) {
 		world_overworld_ui(&w.overworld, queue)
 	case .Fight:
 		world_fight_ui(&w.fight, queue)
+	case .Transitioning:
+		world_transitioning_ui(&w.transition, queue)
 	}
 }
 
@@ -82,6 +92,8 @@ world_handle_event :: proc(w: ^World, event: Event) {
 		world_overworld_handle_event(&w.overworld, event)
 	case .Fight:
 		world_fight_handle_event(&w.fight, event)
+	case .Transitioning:
+		world_transitioning_handle_event(&w.transition, event)
 	}
 
 	#partial switch e in event {
@@ -91,6 +103,9 @@ world_handle_event :: proc(w: ^World, event: Event) {
 	case Event_Fight_Win:
 		w.state = .Overworld
 	case Event_Transition:
+		w.state = .Transitioning
+		w.transition = world_transitioning_make(w.assets)
+	case Event_End_Transitioning:
 		w.current_tilemap += 1
 		if w.current_tilemap < len(w.tilemaps) {
 			w.overworld = world_overworld_make(
@@ -99,5 +114,7 @@ world_handle_event :: proc(w: ^World, event: Event) {
 				w.current_tilemap + 1,
 			)
 		}
+		w.state = .Overworld
 	}
 }
+

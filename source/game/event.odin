@@ -46,6 +46,8 @@ Event_Player_Stopped :: struct {
 
 Event_Transition :: struct {}
 
+Event_End_Transitioning :: struct {}
+
 Event_Button_Pressed :: struct {}
 
 Event_Fight_Player_Attack_Melee :: struct {
@@ -93,6 +95,7 @@ Event :: union {
 	Event_Fight_Enemy_Warn,
 	Event_Fight_Enemy_Turn,
 	Event_Transition,
+	Event_End_Transitioning,
 	Event_Button_Pressed,
 	Event_Fight_Enemy_Attack_Melee,
 	Event_Fight_Enemy_Attack_Ranged,
