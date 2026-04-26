@@ -1,19 +1,12 @@
 package game
 
 World :: struct {
-<<<<<<< HEAD
 	state:           World_State,
 	overworld:       World_Overworld,
 	fight:           World_Fight,
 	tilemaps:        [2]Tile_Map,
 	current_tilemap: int,
 	assets:          ^Assets,
-=======
-	state:     World_State,
-	overworld: World_Overworld,
-	fight:     World_Fight,
-	assets:    ^Assets,
->>>>>>> a0acc02 (implement base fight mech)
 }
 
 @(private = "file")
@@ -22,7 +15,6 @@ World_State :: enum {
 	Fight,
 }
 
-<<<<<<< HEAD
 world_make :: proc(assets: ^Assets) -> ^World {
 	tilemap_1: Tile_Map
 	tilemap_2: Tile_Map
@@ -45,10 +37,6 @@ world_make :: proc(assets: ^Assets) -> ^World {
 	world.overworld = world_overworld_make(assets, &world.tilemaps[0])
 
 	return world
-=======
-world_make :: proc(assets: ^Assets) -> World {
-	return {assets = assets, state = .Overworld, overworld = world_overworld_make(assets)}
->>>>>>> a0acc02 (implement base fight mech)
 }
 
 world_destroy :: proc(w: ^World) {

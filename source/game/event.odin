@@ -84,13 +84,10 @@ Event :: union {
 	Event_Fight_Player_Deflect,
 	Event_Fight_Player_Turn,
 	Event_Fight_Enemy_Turn,
-<<<<<<< HEAD
 	Event_Transition,
 	Event_Button_Pressed,
-=======
 	Event_Fight_Enemy_Attack_Melee,
 	Event_Fight_Enemy_Attack_Range,
->>>>>>> a0acc02 (implement base fight mech)
 }
 
 Event_Queue :: struct {
