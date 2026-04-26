@@ -1,5 +1,6 @@
 package game
 
+import "core:math"
 import "core:math/linalg"
 
 ease_in_expo :: proc(a, b, t: $T) -> T {
