@@ -22,6 +22,8 @@ Event_Fight_Begin :: struct {
 
 Event_Fight_Win :: struct {}
 
+Event_Fight_Player_Take_Hit :: struct {}
+
 Event_Fight_Player_Turn :: struct {}
 
 Event_Fight_Enemy_Turn :: struct {}
@@ -45,6 +47,7 @@ Event_Player_Stopped :: struct {
 Event_Transition :: struct {}
 
 Event_Button_Pressed :: struct {}
+
 Event_Fight_Player_Attack_Melee :: struct {
 	damage: int,
 }
@@ -65,7 +68,6 @@ Event_Fight_Enemy_Attack_Ranged :: struct {}
 
 Event_Lose :: struct {}
 
-
 Event :: union {
 	Event_Start_Game,
 	Event_Exit,
@@ -84,6 +86,7 @@ Event :: union {
 	Event_Fight_Player_Attack_Range,
 	Event_Fight_Player_Parry,
 	Event_Fight_Player_Deflect,
+	Event_Fight_Player_Take_Hit,
 	Event_Fight_Player_Turn,
 	Event_Fight_Enemy_Warn,
 	Event_Fight_Enemy_Turn,

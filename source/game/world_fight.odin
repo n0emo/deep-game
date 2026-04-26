@@ -16,7 +16,7 @@ FIGHT_LINE :: UI_HEIGHT + 150
 BUTTON_SIZE :: rl.Vector2{300, 50}
 
 @(private = "file")
-PADDING :: 20
+PADDING :: 40
 
 @(private = "file")
 BUTTON_GAP :: 10
@@ -25,7 +25,7 @@ BUTTON_GAP :: 10
 GUYS_PADDING :: 100
 
 @(private = "file")
-GUYS_LIMIT :: 100
+GUYS_LIMIT :: 50
 
 @(private = "file")
 PROJECTILE_SPEED :: 2
@@ -39,6 +39,21 @@ ENEMY_READY_TIME :: 1.5
 @(private = "file")
 ENEMY_WARN_TIME :: 1
 
+@(private = "file")
+ENEMY_ATTACK_VELOCITY :: 0.5
+
+@(private = "file")
+PARRY_OFFSET :: 150
+
+@(private = "file")
+PARRY_WINDOW_SIZE :: 0.2
+
+@(private = "file")
+PARRY_BOUND_HEIGHT :: 100
+
+PARRY_LINE_THICKNESS :: 10
+
+
 World_Fight :: struct {
 	player:                  World_Fight_Player,
 	enemy:                   World_Fight_Enemy,
@@ -51,6 +66,7 @@ Fight_State :: enum {
 	Player_Turn,
 	Player_Attacking_Melee,
 	Player_Attacking_Range,
+	Player_Taking_Hit,
 	Enemy_Turn,
 	Enemy_Attacking_Melee,
 	Enemy_Attacking_Range,
@@ -62,10 +78,19 @@ World_Fight_Player :: struct {
 	shield:                 int,
 	melee_damage:           int,
 	range_damage:           int,
+	parry_state:            Player_Parry_State,
 	animation_current:      ^Animation,
 	animation_idle:         Animation,
 	animation_attack_melee: Animation,
 	animation_attack_range: Animation,
+}
+
+@(private = "file")
+Player_Parry_State :: enum {
+	Not_Yed_Tried,
+	Successfull_Parry,
+	Successfull_Deflect,
+	Unsuccessfull,
 }
 
 World_Fight_Enemy :: struct {
@@ -83,7 +108,6 @@ World_Fight_Enemy :: struct {
 	animation_idle:           Animation,
 	animation_attack_melee:   Animation,
 	animation_attack_range:   Animation,
-	pos:                      rl.Vector2,
 }
 
 Turn :: enum {
@@ -104,6 +128,7 @@ world_fight_make :: proc(assets: ^Assets, enemy_hp: int, enemy_name: string) -> 
 
 // TODO: move to something like enemy.odin
 // TODO: melee/ranged attack probability
+@(private = "file")
 enemy_make :: proc(
 	atlas: ^atlas.Atlas,
 	enemy_hp: int,
@@ -143,7 +168,7 @@ enemy_make :: proc(
 		hp = enemy_hp,
 		max_hp = enemy_hp,
 		name = enemy_name,
-		melee_attack_probability = 0.5,
+		melee_attack_probability = 1,
 		melee_damage = 1,
 		range_damage = 1,
 		melee_damage_reduction = 0.2,
@@ -152,7 +177,6 @@ enemy_make :: proc(
 		animation_attack_melee = animation_attack_melee,
 		animation_attack_range = animation_attack_range,
 		animation_idle = animation_idle,
-		pos = pos,
 	}
 }
 
@@ -165,7 +189,7 @@ enemy_draw :: proc(enemy: ^World_Fight_Enemy) {
 		animation_draw(
 			enemy.animation_current,
 			{
-				ease_in_out_back(x_start, x_end, enemy.pos_interpolator),
+				ease_in_back(x_start, x_end, enemy.pos_interpolator),
 				f32(rl.GetScreenHeight()) - FIGHT_LINE,
 			},
 			centered = true,
@@ -174,6 +198,7 @@ enemy_draw :: proc(enemy: ^World_Fight_Enemy) {
 	}
 }
 
+@(private = "file")
 enemy_update :: proc(enemy: ^World_Fight_Enemy, queue: ^Event_Queue) {
 	if enemy.animation_current == nil {
 		enemy.animation_current = &enemy.animation_idle
@@ -185,6 +210,7 @@ enemy_update :: proc(enemy: ^World_Fight_Enemy, queue: ^Event_Queue) {
 	animation_update(enemy.animation_current)
 }
 
+@(private = "file")
 player_make :: proc(atlas: ^atlas.Atlas) -> World_Fight_Player {
 	animation_idle := animation_make(
 		atlas.texture,
@@ -229,6 +255,7 @@ player_make :: proc(atlas: ^atlas.Atlas) -> World_Fight_Player {
 	return player
 }
 
+@(private = "file")
 player_draw :: proc(player: ^World_Fight_Player) {
 	x_start: f32 = GUYS_PADDING
 	x_end: f32 = f32(rl.GetScreenWidth()) - GUYS_PADDING - GUYS_LIMIT
@@ -237,7 +264,7 @@ player_draw :: proc(player: ^World_Fight_Player) {
 		animation_draw(
 			player.animation_current,
 			{
-				ease_in_out_back(x_start, x_end, player.pos_interpolator),
+				ease_in_back(x_start, x_end, player.pos_interpolator),
 				f32(rl.GetScreenHeight()) - FIGHT_LINE,
 			},
 			centered = true,
@@ -246,6 +273,7 @@ player_draw :: proc(player: ^World_Fight_Player) {
 	}
 }
 
+@(private = "file")
 player_update :: proc(player: ^World_Fight_Player, queue: ^Event_Queue) {
 	if player.animation_current == nil {
 		player.animation_current = &player.animation_idle
@@ -276,16 +304,30 @@ world_fight_update :: proc(f: ^World_Fight, queue: ^Event_Queue) {
 			f.player.pos_interpolator = 0
 			event_dispatch(queue, Event_Fight_Enemy_Turn{})
 		}
+
 	case .Player_Attacking_Range:
 		f.projectile_interpolator += rl.GetFrameTime() * PROJECTILE_SPEED
 		if f.projectile_interpolator > 1 {
 			f.projectile_interpolator = 0
 			event_dispatch(queue, Event_Fight_Enemy_Turn{})
 		}
+	case .Player_Taking_Hit:
+		switch f.player.parry_state {
+		case .Not_Yed_Tried:
+			fallthrough
+		case .Unsuccessfull:
+			rl.TraceLog(.INFO, "Player takes damage")
+		case .Successfull_Parry:
+			rl.TraceLog(.INFO, "Player parried successfully")
+		case .Successfull_Deflect:
+			rl.TraceLog(.INFO, "Player deflected successfully")
+		}
+		event_dispatch(queue, Event_Fight_Player_Turn{})
+
 	case .Enemy_Turn:
 		f.enemy.ready_time -= rl.GetFrameTime()
 		if f.enemy.ready_time < ENEMY_WARN_TIME {
-			// TODO: do warn
+			event_dispatch(queue, Event_Fight_Enemy_Warn{})
 		}
 		if f.enemy.ready_time < 0 {
 			if rand.float32() < f.enemy.melee_attack_probability {
@@ -294,17 +336,19 @@ world_fight_update :: proc(f: ^World_Fight, queue: ^Event_Queue) {
 				event_dispatch(queue, Event_Fight_Enemy_Attack_Ranged{})
 			}
 		}
+
 	case .Enemy_Attacking_Melee:
-		f.enemy.pos_interpolator += rl.GetFrameTime()
+		f.enemy.pos_interpolator += rl.GetFrameTime() * ENEMY_ATTACK_VELOCITY
 		if f.enemy.pos_interpolator > 1 {
 			f.enemy.pos_interpolator = 0
-			event_dispatch(queue, Event_Fight_Player_Turn{})
+			event_dispatch(queue, Event_Fight_Player_Take_Hit{})
 		}
+
 	case .Enemy_Attacking_Range:
-		f.projectile_interpolator += rl.GetFrameTime() * PROJECTILE_SPEED
+		f.projectile_interpolator += rl.GetFrameTime() * ENEMY_ATTACK_VELOCITY * PROJECTILE_SPEED
 		if f.projectile_interpolator > 1 {
 			f.projectile_interpolator = 0
-			event_dispatch(queue, Event_Fight_Player_Turn{})
+			event_dispatch(queue, Event_Fight_Player_Take_Hit{})
 		}
 	}
 }
@@ -319,6 +363,7 @@ world_fight_ui :: proc(f: ^World_Fight, queue: ^Event_Queue) {
 	fight_panel_ui(f, queue)
 }
 
+@(private = "file")
 fight_panel_ui :: proc(f: ^World_Fight, queue: ^Event_Queue) {
 	f.enemy.hp = 500
 	// draw_ui_box()
@@ -330,14 +375,14 @@ fight_panel_ui :: proc(f: ^World_Fight, queue: ^Event_Queue) {
 		ui_player_turn(f, queue)
 	case .Player_Attacking_Melee:
 	case .Player_Attacking_Range:
-		x_start: f32 = GUYS_PADDING + PROJECTILE_LIMIT
-		x_end: f32 = f32(rl.GetScreenWidth()) - GUYS_PADDING - PROJECTILE_LIMIT
+		x_start, x_end := projectile_bounds()
 		rl.DrawCircle(
 			cast(i32)linalg.lerp(x_start, x_end, f.projectile_interpolator),
 			rl.GetScreenHeight() - FIGHT_LINE,
 			15,
 			rl.RED,
 		)
+	case .Player_Taking_Hit:
 	case .Enemy_Turn:
 		if f.enemy.ready_time < ENEMY_WARN_TIME {
 			ui_player_defending(f, queue)
@@ -345,8 +390,7 @@ fight_panel_ui :: proc(f: ^World_Fight, queue: ^Event_Queue) {
 	case .Enemy_Attacking_Melee:
 		ui_player_defending(f, queue)
 	case .Enemy_Attacking_Range:
-		x_end: f32 = GUYS_PADDING + PROJECTILE_LIMIT
-		x_start: f32 = f32(rl.GetScreenWidth()) - GUYS_PADDING - PROJECTILE_LIMIT
+		x_end, x_start := projectile_bounds()
 		rl.DrawCircle(
 			cast(i32)linalg.lerp(x_start, x_end, f.projectile_interpolator),
 			rl.GetScreenHeight() - FIGHT_LINE,
@@ -385,6 +429,7 @@ world_fight_handle_event :: proc(f: ^World_Fight, event: Event) {
 		animation_reset(&f.player.animation_attack_range)
 		f.state = .Player_Attacking_Range
 	case Event_Fight_Enemy_Turn:
+		f.player.parry_state = .Not_Yed_Tried
 		f.state = .Enemy_Turn
 		f.enemy.ready_time = ENEMY_READY_TIME
 	case Event_Fight_Enemy_Attack_Melee:
@@ -395,6 +440,24 @@ world_fight_handle_event :: proc(f: ^World_Fight, event: Event) {
 		f.enemy.pos_interpolator = 0
 	case Event_Fight_Player_Turn:
 		f.state = .Player_Turn
+	case Event_Fight_Player_Take_Hit:
+		f.state = .Player_Taking_Hit
+	case Event_Fight_Player_Parry:
+		left, right := parry_bounds()
+		center := parry_center(f)
+		if f.state == .Enemy_Attacking_Melee && left <= center && center <= right {
+			f.player.parry_state = .Successfull_Parry
+		} else {
+			f.player.parry_state = .Unsuccessfull
+		}
+	case Event_Fight_Player_Deflect:
+		left, right := parry_bounds()
+		center := parry_center(f)
+		if f.state == .Enemy_Attacking_Range && left <= center && center <= right {
+			f.player.parry_state = .Successfull_Parry
+		} else {
+			f.player.parry_state = .Unsuccessfull
+		}
 	}
 
 }
@@ -426,29 +489,35 @@ ui_player_turn :: proc(f: ^World_Fight, queue: ^Event_Queue) {
 	}
 }
 
+@(private = "file")
 ui_player_defending :: proc(f: ^World_Fight, queue: ^Event_Queue) {
-	if rl.GuiButton(
-		{
-			x = PADDING,
-			y = f32(rl.GetScreenHeight()) - BUTTON_SIZE.y - PADDING,
-			width = BUTTON_SIZE.x,
-			height = BUTTON_SIZE.y,
-		},
-		"Deflect",
-	) {
-		event_dispatch(queue, Event_Fight_Player_Deflect{})
-	}
+	draw_parry_bounds()
+	draw_parry_marker(f)
 
-	if rl.GuiButton(
-		{
-			x = PADDING,
-			y = f32(rl.GetScreenHeight()) - BUTTON_SIZE.y * 2 - BUTTON_GAP - PADDING,
-			width = BUTTON_SIZE.x,
-			height = BUTTON_SIZE.y,
-		},
-		"Parry",
-	) {
-		event_dispatch(queue, Event_Fight_Player_Parry{})
+	if f.player.parry_state == .Not_Yed_Tried {
+		if rl.GuiButton(
+			{
+				x = PADDING,
+				y = f32(rl.GetScreenHeight()) - BUTTON_SIZE.y - PADDING,
+				width = BUTTON_SIZE.x,
+				height = BUTTON_SIZE.y,
+			},
+			"Parry",
+		) {
+			event_dispatch(queue, Event_Fight_Player_Parry{})
+		}
+
+		if rl.GuiButton(
+			{
+				x = PADDING,
+				y = f32(rl.GetScreenHeight()) - BUTTON_SIZE.y * 2 - BUTTON_GAP - PADDING,
+				width = BUTTON_SIZE.x,
+				height = BUTTON_SIZE.y,
+			},
+			"Deflect",
+		) {
+			event_dispatch(queue, Event_Fight_Player_Deflect{})
+		}
 	}
 }
 
@@ -537,4 +606,52 @@ draw_fight_line :: proc() {
 		rl.GetScreenHeight() - FIGHT_LINE,
 		rl.BLACK,
 	)
+}
+
+@(private = "file")
+projectile_bounds :: proc() -> (left: f32, right: f32) {
+	left = GUYS_PADDING + PROJECTILE_LIMIT
+	right = f32(rl.GetScreenWidth()) - GUYS_PADDING - PROJECTILE_LIMIT
+	return
+}
+
+@(private = "file")
+parry_center :: proc(f: ^World_Fight) -> f32 {
+	#partial switch f.state {
+	case .Enemy_Attacking_Melee:
+		// TODO: deduplicate
+		x_end: f32 = GUYS_PADDING + GUYS_LIMIT
+		x_start: f32 = f32(rl.GetScreenWidth()) - GUYS_PADDING
+		return ease_in_back(x_start, x_end, f.enemy.pos_interpolator)
+	case .Enemy_Attacking_Range:
+		left, right := projectile_bounds()
+		return linalg.lerp(right, left, f.projectile_interpolator)
+	case:
+		return -100
+	}
+}
+
+@(private = "file")
+parry_bounds :: proc() -> (left: f32, right: f32) {
+	length: f32 = f32(rl.GetScreenWidth()) - GUYS_LIMIT * 2
+	left = GUYS_LIMIT + PARRY_OFFSET
+	right = GUYS_LIMIT + length * PARRY_WINDOW_SIZE + PARRY_OFFSET
+	return
+}
+
+@(private = "file")
+draw_parry_bounds :: proc() {
+	left, right := parry_bounds()
+	up: f32 = f32(rl.GetScreenHeight()) - FIGHT_LINE + PARRY_BOUND_HEIGHT * 0.5
+	down: f32 = f32(rl.GetScreenHeight()) - FIGHT_LINE - PARRY_BOUND_HEIGHT * 0.5
+
+	rl.DrawLineEx({left, up}, {left, down}, PARRY_LINE_THICKNESS, rl.RED)
+	rl.DrawLineEx({right, up}, {right, down}, PARRY_LINE_THICKNESS, rl.RED)
+}
+
+@(private = "file")
+draw_parry_marker :: proc(f: ^World_Fight) {
+	x := parry_center(f)
+	y := rl.GetScreenHeight() - FIGHT_LINE
+	rl.DrawCircle(i32(x), y, 5, rl.BLUE)
 }

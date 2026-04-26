@@ -1,6 +1,5 @@
 package game
 
-import "core:math"
 import "core:math/linalg"
 
 ease_in_expo :: proc(a, b, t: $T) -> T {
@@ -11,17 +10,12 @@ ease_in_expo :: proc(a, b, t: $T) -> T {
 	return linalg.lerp(a, b, t)
 }
 
-ease_in_out_back :: proc(a, b, t: $T) -> T {
-	c1 :: 1.70158
-	c2 :: c1 * 1.525
-
+ease_in_back :: proc(a, b, t: $T) -> T {
 	t := t
-	if t < 0.5 {
-		t = (math.pow(2 * t, 2) * ((c2 + 1) * 2 * t - c2)) / 2
-	} else {
-		t = (math.pow(2 * t - 2, 2) * ((c2 + 1) * (t * 2 - 2) + c2) + 2) / 2
-	}
+	// c1 :: 1.70158
+	// c3 :: c1 + 1
 
+	t = t * t
+	// t = c3 * t * t * t - c1 * t * t
 	return linalg.lerp(a, b, t)
-
 }
