@@ -45,14 +45,29 @@ animation_reset :: proc(animation: ^Animation) {
 	animation.index = 0
 }
 
-animation_draw :: proc(animation: ^Animation, pos: rl.Vector2) {
+animation_draw :: proc(
+	animation: ^Animation,
+	pos: rl.Vector2,
+	scale: f32 = 1,
+	centered: bool = false,
+) {
 	current_frame := animation.frames[animation.index]
+	width := current_frame.rect.width
+	height := current_frame.rect.height
+
 	dest := rl.Rectangle {
-		x      = pos.x,
-		y      = pos.y,
-		width  = current_frame.rect.width,
-		height = current_frame.rect.height,
+		width  = width * scale,
+		height = height * scale,
 	}
+
+	if centered {
+		dest.x = pos.x - width * 0.5 * scale
+		dest.y = pos.y - height * 0.5 * scale
+	} else {
+		dest.x = pos.x
+		dest.y = pos.y
+	}
+
 	rl.DrawTexturePro(animation.texture, current_frame.rect, dest, 0, 0, rl.WHITE)
 }
 
