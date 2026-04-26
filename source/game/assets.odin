@@ -20,6 +20,9 @@ assets_load :: proc(assets_dir: string = "assets") -> ^Assets {
 	assets.audio = assets_audio_load(slashpath.join({assets_dir, "audio"}, context.temp_allocator))
 	assets.tiled_loader = tiled.loader_make()
 	tilemap_level_1, _ := tiled.tilemap_load(assets.tiled_loader, "./assets/tilemaps/level-1.tmj")
+	for _, tileset in assets.tiled_loader.tilesets {
+		rl.SetTextureFilter(tileset.texture, .POINT)
+	}
 	assets.tilemap_level_1 = tilemap_level_1
 
 	return assets
@@ -68,7 +71,9 @@ assets_sprites_unload :: proc(sprites: ^Assets_Sprites) {
 
 @(private = "file")
 load_sprite :: proc(sprites_dir: string, name: string) -> rl.Texture2D {
-	return rl.LoadTexture(fmt.ctprintf("%s/%s", sprites_dir, name))
+	texture := rl.LoadTexture(fmt.ctprintf("%s/%s", sprites_dir, name))
+	rl.SetTextureFilter(texture, .POINT)
+	return texture
 }
 
 @(private = "file")
@@ -78,6 +83,7 @@ load_atlas :: proc(sprites_dir: string, name: string) -> atlas.Atlas {
 	if err != nil {
 		panic(fmt.tprintf("Could not load atlas: %v", err))
 	}
+	rl.SetTextureFilter(atlas.texture, .POINT)
 	return atlas
 }
 
