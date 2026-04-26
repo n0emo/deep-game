@@ -10,7 +10,17 @@ Event_Menu :: struct {}
 
 Event_Menu_Home :: struct {}
 
-Event_Fight :: struct {}
+Event_Fight_Encounter :: struct {
+	using enemy: Object_Enemy,
+	obj:         Object,
+}
+
+Event_Fight_Begin :: struct {
+	using enemy: Object_Enemy,
+	obj:         Object,
+}
+
+Event_Fight_Win :: struct {}
 
 Event_Fight_Player_Turn :: struct {}
 
@@ -47,7 +57,9 @@ Event :: union {
 	Event_Change_Sfx_Volume,
 	Event_Input_Go,
 	Event_Player_Stopped,
-	Event_Fight,
+	Event_Fight_Encounter,
+	Event_Fight_Begin,
+	Event_Fight_Win,
 	Event_Fight_Player_Turn,
 	Event_Fight_Enemy_Turn,
 }

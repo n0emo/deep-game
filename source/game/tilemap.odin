@@ -75,6 +75,18 @@ tilemap_is_collides_with_object :: proc(
 	return Object{}, false
 }
 
+tilemap_delete_object :: proc(m: ^Tile_Map, id: int) {
+	if id in m.objects {
+		delete_key(&m.objects, id)
+		for &o in m.obj_layer.objects {
+			if o.id == id {
+				o.visible = false
+				break
+			}
+		}
+	}
+}
+
 @(private = "file")
 draw_tile_layer :: proc(m: ^Tile_Map, l: ^tiled.Tile_Layer, offset: rl.Vector2) {
 	for x in 0 ..< tilemap_width(m) {
@@ -94,6 +106,10 @@ draw_tile_layer :: proc(m: ^Tile_Map, l: ^tiled.Tile_Layer, offset: rl.Vector2) 
 @(private = "file")
 draw_obj_layer :: proc(m: ^Tile_Map, l: ^tiled.Object_Layer, offset: rl.Vector2) {
 	for obj in l.objects {
+		if !obj.visible {
+			continue
+		}
+
 		dest := rl.Rectangle {
 			x      = offset.x + obj.x,
 			y      = offset.y + obj.y,

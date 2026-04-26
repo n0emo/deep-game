@@ -1,20 +1,24 @@
 package game
 
 import atlas "../atlas"
-import "core:fmt"
 import "core:math/linalg"
 import rl "vendor:raylib"
 
 CAMERA_LERP :: 0.05
 PLAYER_SPEED :: 7
 PLAYER_NON_IDLE_TIME :: 0.1
+ENCOUNTER_TIME :: 1
+ENCOUNTER_ZOOM_FACTOR :: 12
+ENCOUNTER_ROTATION_FACTOR :: 15
 
 BACKGROUND_COLOR := rl.GetColor(0x29211dff)
 
 World_Overworld :: struct {
-	tilemap: Tile_Map,
-	player:  Overworld_Player,
-	camera:  rl.Camera2D,
+	tilemap:         Tile_Map,
+	player:          Overworld_Player,
+	camera:          rl.Camera2D,
+	encountering:    bool,
+	encounter_state: Encounter_State,
 }
 
 world_overworld_make :: proc(assets: ^Assets) -> World_Overworld {
@@ -22,7 +26,6 @@ world_overworld_make :: proc(assets: ^Assets) -> World_Overworld {
 	if !ok {
 		panic("Could not load tilemap")
 	}
-	fmt.println(tilemap.spawnpoint)
 	player_tile := [2]i32{i32(tilemap.spawnpoint.x), i32(tilemap.spawnpoint.y)} / TILE_SIZE
 	player := player_make(&assets.sprites.player, player_tile)
 	camera := rl.Camera2D{}
@@ -40,8 +43,24 @@ world_overworld_update :: proc(w: ^World_Overworld, queue: ^Event_Queue) {
 
 	player_rect := rl.Rectangle{w.player.pos.x, w.player.pos.y, TILE_SIZE, TILE_SIZE}
 	if obj, ok := tilemap_is_collides_with_object(&w.tilemap, player_rect); ok {
-		if _, is_transition := obj.properties.(Object_Transition); is_transition {
+		switch prop in obj.properties {
+		case Object_Spawnpoint:
+		// What are you supposed to do with spawnpoint?
+		case Object_Transition:
 			event_dispatch(queue, Event_Menu{})
+		case Object_Enemy:
+			event_dispatch(queue, Event_Fight_Encounter{enemy = prop, obj = obj})
+			rl.TraceLog(.INFO, "Fight begins with %s", prop.enemy_name)
+		}
+	}
+
+	if w.encountering {
+		s := &w.encounter_state
+		s.time += rl.GetFrameTime()
+		if s.time >= ENCOUNTER_TIME {
+			event_dispatch(queue, Event_Fight_Begin{enemy = s.enemy, obj = s.obj})
+			s^ = {}
+			w.encountering = false
 		}
 	}
 }
@@ -58,7 +77,15 @@ world_overworld_ui :: proc(w: ^World_Overworld, queue: ^Event_Queue) {}
 
 world_overworld_handle_event :: proc(w: ^World_Overworld, event: Event) {
 	#partial switch e in event {
+	case Event_Fight_Encounter:
+		tilemap_delete_object(&w.tilemap, e.obj.id)
+		w.encountering = true
+		w.encounter_state = encounter_state_make(e)
 	case Event_Input_Go:
+		if w.encountering {
+			return
+		}
+
 		next_tile := w.player.tile + direction_to_vec_i32(e.direction)
 		if tilemap_tile_passable(&w.tilemap, next_tile) {
 			if _, ok := w.player.state.(Player_Idle); ok {
@@ -242,7 +269,20 @@ player_reset_position :: proc(player: ^Overworld_Player) {
 
 @(private = "file")
 world_update_camera :: proc(w: ^World_Overworld) {
-	w.camera.zoom = 6.0
+	w.camera.zoom = 6.0 + w.encounter_state.time * ENCOUNTER_ZOOM_FACTOR
+	w.camera.rotation = w.encounter_state.time * ENCOUNTER_ROTATION_FACTOR
 	w.camera.offset = rl.Vector2{f32(rl.GetScreenWidth()) * 0.5, f32(rl.GetScreenHeight()) * 0.5}
 	w.camera.target = linalg.lerp(w.camera.target, w.player.pos, CAMERA_LERP)
+}
+
+
+@(private = "file")
+Encounter_State :: struct {
+	using event: Event_Fight_Encounter,
+	time:        f32,
+}
+
+@(private = "file")
+encounter_state_make :: proc(event: Event_Fight_Encounter) -> Encounter_State {
+	return {event = event, time = 0}
 }
