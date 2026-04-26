@@ -2,6 +2,10 @@ package game
 
 import rl "vendor:raylib"
 
+DEFAULT_MASTER_VOLUME :: 0.5
+DEFAULT_MUSIC_VOLUME :: 1.0
+DEFAULT_SFX_VOLUME :: 1.0
+
 Audio_System :: struct {
 	current_music:  ^rl.Music,
 	assets:         ^Assets_Audio,
@@ -18,7 +22,11 @@ audio_system_make :: proc(assets: ^Assets) -> Audio_System {
 	return {
 		current_music = nil,
 		assets = &assets.audio,
-		settings = {master_volume = 0.5, music_volume = 1.0, sfx_volume = 1.0},
+		settings = {
+			master_volume = DEFAULT_MASTER_VOLUME,
+			music_volume = DEFAULT_MUSIC_VOLUME,
+			sfx_volume = DEFAULT_SFX_VOLUME,
+		},
 	}
 }
 
@@ -32,18 +40,19 @@ audio_system_update :: proc(a: ^Audio_System) {
 
 audio_system_handle_event :: proc(a: ^Audio_System, event: Event) {
 	#partial switch e in event {
+	case Event_Menu:
+		switch_music(a, &a.assets.music_menu)
+	case Event_Start_Game:
+		switch_music(a, &a.assets.music_overworld)
 	case Event_Fight_Begin:
-		rl.TraceLog(.INFO, "Playing battle music")
 		switch_music(a, &a.assets.music_battle)
 	case Event_Fight_Win:
-		switch_music(a, nil)
-    case Event_Change_Master_Volume:
-        a.settings = {master_volume = e.volume}
-    case Event_Change_Music_Volume:
-        a.settings = {music_volume = e.volume}
-    case Event_Change_Sfx_Volume:
-        a.settings = {sfx_volume = e.volume}
-    }
+		switch_music(a, &a.assets.music_overworld)
+	case Event_Change_Audio_Volume:
+		a.master_volume = e.master_volume
+		a.music_volume = e.music_volume
+		a.sfx_volume = e.sfx_volume
+	}
 }
 
 @(private = "file")
@@ -55,6 +64,5 @@ switch_music :: proc(a: ^Audio_System, m: ^rl.Music) {
 	a.current_music = m
 	if m != nil {
 		rl.PlayMusicStream(m^)
-		rl.SeekMusicStream(m^, 0)
 	}
 }

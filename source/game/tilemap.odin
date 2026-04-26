@@ -86,8 +86,8 @@ draw_tile_layer :: proc(m: ^Tile_Map, l: ^tiled.Tile_Layer, offset: rl.Vector2) 
 	for x in 0 ..< tilemap_width(m) {
 		for y in 0 ..< tilemap_height(m) {
 			dest := rl.Rectangle {
-				x      = offset.x + f32(x) * f32(TILE_SIZE),
-				y      = offset.y + f32(y) * f32(TILE_SIZE),
+				x      = offset.x + f32(x * TILE_SIZE),
+				y      = offset.y + f32(y * TILE_SIZE),
 				width  = TILE_SIZE,
 				height = TILE_SIZE,
 			}

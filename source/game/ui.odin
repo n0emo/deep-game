@@ -27,6 +27,7 @@ button_centered :: proc(text: cstring, size: rl.Vector2, offset: rl.Vector2) -> 
 	)
 }
 
+// NOTE: this functions always returns false on web platform for some reason
 slider_centered :: proc(text: cstring, value: ^f32, size: rl.Vector2, offset: rl.Vector2) -> bool {
 	value := rl.GuiSliderBar(
 		rl.Rectangle {

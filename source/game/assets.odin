@@ -41,7 +41,9 @@ Assets_Sprites :: struct {
 }
 
 Assets_Audio :: struct {
-	music_battle: rl.Music,
+	music_battle:    rl.Music,
+	music_overworld: rl.Music,
+	music_menu:      rl.Music,
 }
 
 @(private = "file")
@@ -81,11 +83,17 @@ load_atlas :: proc(sprites_dir: string, name: string) -> atlas.Atlas {
 
 @(private = "file")
 assets_audio_load :: proc(audio_dir: string) -> Assets_Audio {
-	return {music_battle = load_music(audio_dir, "music-battle.ogg")}
+	return {
+		music_battle = load_music(audio_dir, "music-battle.ogg"),
+		music_overworld = load_music(audio_dir, "music-overworld.ogg"),
+		music_menu = load_music(audio_dir, "music-menu.ogg"),
+	}
 }
 
 assets_audio_unload :: proc(audio: ^Assets_Audio) {
 	rl.UnloadMusicStream(audio.music_battle)
+	rl.UnloadMusicStream(audio.music_overworld)
+	rl.UnloadMusicStream(audio.music_menu)
 }
 
 @(private = "file")

@@ -26,16 +26,10 @@ Event_Fight_Player_Turn :: struct {}
 
 Event_Fight_Enemy_Turn :: struct {}
 
-Event_Change_Master_Volume :: struct {
-	volume: f32,
-}
-
-Event_Change_Music_Volume :: struct {
-	volume: f32,
-}
-
-Event_Change_Sfx_Volume :: struct {
-	volume: f32,
+Event_Change_Audio_Volume :: struct {
+	master_volume: f32,
+	music_volume:  f32,
+	sfx_volume:    f32,
 }
 
 Event_Input_Go :: struct {
@@ -52,9 +46,7 @@ Event :: union {
 	Event_Menu,
 	Event_Menu_Home,
 	Event_Menu_Settings,
-	Event_Change_Master_Volume,
-	Event_Change_Music_Volume,
-	Event_Change_Sfx_Volume,
+	Event_Change_Audio_Volume,
 	Event_Input_Go,
 	Event_Player_Stopped,
 	Event_Fight_Encounter,

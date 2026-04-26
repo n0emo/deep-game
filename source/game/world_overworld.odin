@@ -4,7 +4,7 @@ import atlas "../atlas"
 import "core:math/linalg"
 import rl "vendor:raylib"
 
-CAMERA_LERP :: 0.05
+CAMERA_LERP :: 0.08
 PLAYER_SPEED :: 7
 PLAYER_NON_IDLE_TIME :: 0.1
 ENCOUNTER_TIME :: 0.7

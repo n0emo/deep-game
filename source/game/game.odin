@@ -32,6 +32,7 @@ game_make :: proc() -> ^Game_Memory {
 	input := input_make()
 	audio := audio_system_make(assets)
 
+
 	g^ = Game_Memory {
 		assets      = assets,
 		main_menu   = main_menu,
@@ -40,6 +41,9 @@ game_make :: proc() -> ^Game_Memory {
 		input       = input,
 		audio       = audio,
 	}
+
+	event_dispatch(&g.event_queue, Event_Menu{})
+
 	return g
 }
 

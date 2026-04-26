@@ -16,9 +16,9 @@ PANEL_SIZE :: rl.Vector2{550, 400}
 
 
 Main_Menu :: struct {
-	bg_texture: rl.Texture2D,
-	settings:   Main_Menu_Settings,
-	screen:     Main_Menu_Screen,
+	bg_texture:     rl.Texture2D,
+	using settings: Main_Menu_Settings,
+	screen:         Main_Menu_Screen,
 }
 
 @(private = "file")
@@ -38,9 +38,9 @@ main_menu_make :: proc(assets: ^Assets) -> Main_Menu {
 	return {
 		bg_texture = assets.sprites.main_menu,
 		settings = Main_Menu_Settings {
-			master_volume = 50.0,
-			music_volume = 100.0,
-			sfx_volume = 100.0,
+			master_volume = DEFAULT_MASTER_VOLUME * 100,
+			music_volume = DEFAULT_MUSIC_VOLUME * 100,
+			sfx_volume = DEFAULT_SFX_VOLUME * 100,
 		},
 		screen = .Home,
 	}
@@ -101,21 +101,21 @@ menu_home_buttons :: proc(m: ^Main_Menu, queue: ^Event_Queue) {
 
 @(private = "file")
 menu_settings_buttons :: proc(m: ^Main_Menu, queue: ^Event_Queue) {
-	if slider_centered("Master", &m.settings.master_volume, SLIDER_SIZE, {0, -90}) {
-		event_dispatch(queue, Event_Change_Master_Volume{volume = m.settings.sfx_volume / 100.0})
-	}
-
-	if slider_centered("Music", &m.settings.music_volume, SLIDER_SIZE, {0, -30}) {
-		event_dispatch(queue, Event_Change_Music_Volume{volume = m.settings.sfx_volume / 100.0})
-	}
-
-	if slider_centered("SFX", &m.settings.sfx_volume, SLIDER_SIZE, {0, 30}) {
-		event_dispatch(queue, Event_Change_Sfx_Volume{volume = m.settings.sfx_volume / 100.0})
-	}
-
+	slider_centered("Master", &m.master_volume, SLIDER_SIZE, {0, -90})
+	slider_centered("Music", &m.settings.music_volume, SLIDER_SIZE, {0, -30})
+	slider_centered("SFX", &m.settings.sfx_volume, SLIDER_SIZE, {0, 30})
 	if button_centered("Back", BUTTON_SIZE, {0, 90}) {
 		event_dispatch(queue, Event_Menu_Home{})
 	}
+
+	event_dispatch(
+		queue,
+		Event_Change_Audio_Volume {
+			master_volume = m.master_volume / 100,
+			music_volume = m.music_volume / 100,
+			sfx_volume = m.sfx_volume / 100,
+		},
+	)
 }
 
 

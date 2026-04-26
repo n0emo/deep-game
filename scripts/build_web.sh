@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-set -eu
+set -xeu
 
 # Point this to where you installed emscripten. Optional on systems that already
 # have `emcc` in the path.
@@ -28,7 +28,14 @@ files="$OUT_DIR/game.wasm.o ${ODIN_PATH}/vendor/raylib/wasm/libraylib.a ${ODIN_P
 
 # index_template.html contains the javascript code that calls the procedures in
 # source/main_web/main_web.odin
-flags="-sUSE_GLFW=3 -sWASM_BIGINT -sEXPORTED_RUNTIME_METHODS=HEAPF32 -sWARN_ON_UNDEFINED_SYMBOLS=0 -sASSERTIONS --shell-file source/main_web/index_template.html --preload-file assets"
+flags="-sUSE_GLFW=3 \
+    -sWASM_BIGINT \
+    -sEXPORTED_RUNTIME_METHODS=HEAPF32,ccall \
+    -sTOTAL_MEMORY=67108864 \
+    -sWARN_ON_UNDEFINED_SYMBOLS=0 \
+    -sASSERTIONS \
+    --shell-file source/main_web/index_template.html \
+    --preload-file assets"
 
 # For debugging: Add `-g` to `emcc` (gives better error callstack in chrome)
 emcc -o $OUT_DIR/index.html $files $flags
