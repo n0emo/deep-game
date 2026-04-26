@@ -37,7 +37,13 @@ audio_system_handle_event :: proc(a: ^Audio_System, event: Event) {
 		switch_music(a, &a.assets.music_battle)
 	case Event_Fight_Win:
 		switch_music(a, nil)
-	}
+    case Event_Change_Master_Volume:
+        a.settings = {master_volume = e.volume}
+    case Event_Change_Music_Volume:
+        a.settings = {music_volume = e.volume}
+    case Event_Change_Sfx_Volume:
+        a.settings = {sfx_volume = e.volume}
+    }
 }
 
 @(private = "file")
