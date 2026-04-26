@@ -8,6 +8,7 @@ Animation :: struct {
 	texture: rl.Texture2D,
 	time:    f32,
 	index:   int,
+	// TODO: [dynamic; 8]Animation_Frame
 	frames:  []Animation_Frame,
 	loop:    bool,
 }

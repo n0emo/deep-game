@@ -3,10 +3,11 @@ package game
 import atlas "../atlas"
 import "core:fmt"
 import "core:math/linalg"
+import "core:math/rand"
 import rl "vendor:raylib"
 
 @(private = "file")
-UI_HEIGHT :: 300
+UI_HEIGHT :: 250
 
 @(private = "file")
 FIGHT_LINE :: UI_HEIGHT + 150
@@ -31,6 +32,12 @@ PROJECTILE_SPEED :: 2
 
 @(private = "file")
 PROJECTILE_LIMIT :: 10
+
+@(private = "file")
+ENEMY_READY_TIME :: 1.5
+
+@(private = "file")
+ENEMY_WARN_TIME :: 1
 
 World_Fight :: struct {
 	player:                  World_Fight_Player,
@@ -62,19 +69,21 @@ World_Fight_Player :: struct {
 }
 
 World_Fight_Enemy :: struct {
-	pos_interpolator:       f32,
-	hp:                     int,
-	max_hp:                 int,
-	name:                   string,
-	melee_damage:           int,
-	range_damage:           int,
-	melee_damage_reduction: f32,
-	range_damage_reduction: f32,
-	animation_current:      ^Animation,
-	animation_idle:         Animation,
-	animation_attack_melee: Animation,
-	animation_attack_range: Animation,
-	pos:                    rl.Vector2,
+	pos_interpolator:         f32,
+	hp:                       int,
+	max_hp:                   int,
+	name:                     string,
+	melee_attack_probability: f32,
+	melee_damage:             int,
+	range_damage:             int,
+	melee_damage_reduction:   f32,
+	range_damage_reduction:   f32,
+	ready_time:               f32,
+	animation_current:        ^Animation,
+	animation_idle:           Animation,
+	animation_attack_melee:   Animation,
+	animation_attack_range:   Animation,
+	pos:                      rl.Vector2,
 }
 
 Turn :: enum {
@@ -93,6 +102,8 @@ world_fight_make :: proc(assets: ^Assets, enemy_hp: int, enemy_name: string) -> 
 	return {state = .Player_Turn, enemy = enemy, player = player, assets = assets}
 }
 
+// TODO: move to something like enemy.odin
+// TODO: melee/ranged attack probability
 enemy_make :: proc(
 	atlas: ^atlas.Atlas,
 	enemy_hp: int,
@@ -132,6 +143,7 @@ enemy_make :: proc(
 		hp = enemy_hp,
 		max_hp = enemy_hp,
 		name = enemy_name,
+		melee_attack_probability = 0.5,
 		melee_damage = 1,
 		range_damage = 1,
 		melee_damage_reduction = 0.2,
@@ -144,11 +156,18 @@ enemy_make :: proc(
 	}
 }
 
+@(private = "file")
 enemy_draw :: proc(enemy: ^World_Fight_Enemy) {
+	x_end: f32 = GUYS_PADDING + GUYS_LIMIT
+	x_start: f32 = f32(rl.GetScreenWidth()) - GUYS_PADDING
+
 	if enemy.animation_current != nil {
 		animation_draw(
 			enemy.animation_current,
-			{f32(rl.GetScreenWidth()) - GUYS_PADDING, f32(rl.GetScreenHeight()) - FIGHT_LINE},
+			{
+				ease_in_out_back(x_start, x_end, enemy.pos_interpolator),
+				f32(rl.GetScreenHeight()) - FIGHT_LINE,
+			},
 			centered = true,
 			scale = 6,
 		)
@@ -255,22 +274,43 @@ world_fight_update :: proc(f: ^World_Fight, queue: ^Event_Queue) {
 		f.player.pos_interpolator += rl.GetFrameTime()
 		if f.player.pos_interpolator > 1 {
 			f.player.pos_interpolator = 0
-			event_dispatch(queue, Event_Fight_Player_Turn{})
+			event_dispatch(queue, Event_Fight_Enemy_Turn{})
 		}
 	case .Player_Attacking_Range:
 		f.projectile_interpolator += rl.GetFrameTime() * PROJECTILE_SPEED
 		if f.projectile_interpolator > 1 {
 			f.projectile_interpolator = 0
-			event_dispatch(queue, Event_Fight_Player_Turn{})
+			event_dispatch(queue, Event_Fight_Enemy_Turn{})
 		}
 	case .Enemy_Turn:
+		f.enemy.ready_time -= rl.GetFrameTime()
+		if f.enemy.ready_time < ENEMY_WARN_TIME {
+			// TODO: do warn
+		}
+		if f.enemy.ready_time < 0 {
+			if rand.float32() < f.enemy.melee_attack_probability {
+				event_dispatch(queue, Event_Fight_Enemy_Attack_Melee{})
+			} else {
+				event_dispatch(queue, Event_Fight_Enemy_Attack_Ranged{})
+			}
+		}
 	case .Enemy_Attacking_Melee:
+		f.enemy.pos_interpolator += rl.GetFrameTime()
+		if f.enemy.pos_interpolator > 1 {
+			f.enemy.pos_interpolator = 0
+			event_dispatch(queue, Event_Fight_Player_Turn{})
+		}
 	case .Enemy_Attacking_Range:
+		f.projectile_interpolator += rl.GetFrameTime() * PROJECTILE_SPEED
+		if f.projectile_interpolator > 1 {
+			f.projectile_interpolator = 0
+			event_dispatch(queue, Event_Fight_Player_Turn{})
+		}
 	}
 }
 
 world_fight_draw :: proc(f: ^World_Fight) {
-	rl.ClearBackground(rl.BEIGE)
+	draw_background(f.assets.sprites.fight_background)
 	player_draw(&f.player)
 	enemy_draw(&f.enemy)
 }
@@ -281,49 +321,10 @@ world_fight_ui :: proc(f: ^World_Fight, queue: ^Event_Queue) {
 
 fight_panel_ui :: proc(f: ^World_Fight, queue: ^Event_Queue) {
 	f.enemy.hp = 500
-	draw_ui_box()
+	// draw_ui_box()
 	draw_enemy_hp(f)
 	draw_player_hp(f)
 
-	// #partial switch f.state {
-	// case .Player_Turn:
-	//
-	// case .Player_Attacking:
-	// 	if f.player.animation_current.index == len(f.player.animation_current.frames) - 1 {
-	// 		rl.TraceLog(.INFO, "Player turn ended")
-	// 		event_dispatch(queue, Event_Fight_Enemy_Turn{})
-	// 	}
-	//
-	// case .Enemy_Attacking:
-	// 	text_centered("Enemy's turn", 32, {0, 50})
-	// 	event_dispatch(queue, Event_Fight_Enemy_Attack_Melee{})
-	// 	if (rl.IsKeyPressed(rl.KeyboardKey.J)) {
-	// 		event_dispatch(queue, Event_Fight_Player_Parry{})
-	// 	}
-	// 	if (rl.IsKeyPressed(rl.KeyboardKey.K)) {
-	// 		event_dispatch(queue, Event_Fight_Player_Parry{})
-	// 	}
-	// 	if button_centered(
-	// 		"Parry(for melee attack)",
-	// 		{300, 50},
-	// 		{cast(f32)(-rl.GetScreenWidth() / 2 + 200), 0},
-	// 	) {
-	// 		event_dispatch(queue, Event_Fight_Player_Parry{})
-	// 	}
-	// 	if button_centered(
-	// 		"Deflect(for ranged attack)",
-	// 		{300, 100},
-	// 		{cast(f32)(-rl.GetScreenWidth() / 2 + 200), 0},
-	// 	) {
-	// 		event_dispatch(queue, Event_Fight_Player_Deflect{})
-	// 	}
-	// 	if f.enemy.animation_current.index == len(f.enemy.animation_current.frames) - 1 {
-	// 		event_dispatch(queue, Event_Fight_Player_Turn{})
-	// 		rl.TraceLog(.INFO, "Enemy turn ended")
-	//
-	// 	}
-	// }
-	// Delete this on release
 	switch f.state {
 	case .Player_Turn:
 		ui_player_turn(f, queue)
@@ -334,12 +335,26 @@ fight_panel_ui :: proc(f: ^World_Fight, queue: ^Event_Queue) {
 		rl.DrawCircle(
 			cast(i32)linalg.lerp(x_start, x_end, f.projectile_interpolator),
 			rl.GetScreenHeight() - FIGHT_LINE,
-			4,
+			15,
 			rl.RED,
 		)
 	case .Enemy_Turn:
+		if f.enemy.ready_time < ENEMY_WARN_TIME {
+			ui_player_defending(f, queue)
+		}
 	case .Enemy_Attacking_Melee:
+		ui_player_defending(f, queue)
 	case .Enemy_Attacking_Range:
+		x_end: f32 = GUYS_PADDING + PROJECTILE_LIMIT
+		x_start: f32 = f32(rl.GetScreenWidth()) - GUYS_PADDING - PROJECTILE_LIMIT
+		rl.DrawCircle(
+			cast(i32)linalg.lerp(x_start, x_end, f.projectile_interpolator),
+			rl.GetScreenHeight() - FIGHT_LINE,
+			15,
+			rl.RED,
+		)
+
+		ui_player_defending(f, queue)
 	}
 
 	when ENABLE_DEBUG {
@@ -369,45 +384,17 @@ world_fight_handle_event :: proc(f: ^World_Fight, event: Event) {
 		f.player.animation_current = &f.player.animation_attack_range
 		animation_reset(&f.player.animation_attack_range)
 		f.state = .Player_Attacking_Range
-	// 	f.state = .Player_Attacking
-	//
-	// case Event_Fight_Enemy_Attack_Melee:
-	// 	if f.state != .Enemy_Attacking {
-	// 		return
-	// 	}
-	// 	f.enemy.animation_current = &f.enemy.animation_attack_melee
-	// 	animation_reset(&f.enemy.animation_attack_melee)
-	//
-	// 	if f.player.shield > 0 {
-	// 		f.player.shield = max(0, f.player.shield - f.enemy.melee_damage)
-	// 	} else {
-	// 		f.player.hp = max(0, f.player.hp - f.enemy.melee_damage)
-	// 	}
-	// case Event_Fight_Enemy_Attack_Range:
-	// 	if f.state != .Enemy_Attacking {
-	// 		return
-	// 	}
-	// 	f.enemy.animation_current = &f.enemy.animation_attack_range
-	// 	animation_reset(&f.enemy.animation_attack_range)
-	//
-	// 	if f.player.shield > 0 {
-	// 		f.player.shield = max(0, f.player.shield - f.enemy.range_damage)
-	// 	} else {
-	// 		f.player.hp = max(0, f.player.hp - f.enemy.range_damage)
-	// 	}
-	// case Event_Fight_Player_Parry:
-	// 	if f.state != .Enemy_Attacking {
-	// 		return
-	// 	}
-	// case Event_Fight_Player_Deflect:
-	// 	if f.state != .Enemy_Attacking {
-	// 		return
-	// 	}
-	// case Event_Fight_Enemy_Turn:
-	// 	f.state = .Enemy_Attacking
+	case Event_Fight_Enemy_Turn:
+		f.state = .Enemy_Turn
+		f.enemy.ready_time = ENEMY_READY_TIME
+	case Event_Fight_Enemy_Attack_Melee:
+		f.state = .Enemy_Attacking_Melee
+		f.enemy.pos_interpolator = 0
+	case Event_Fight_Enemy_Attack_Ranged:
+		f.state = .Enemy_Attacking_Range
+		f.enemy.pos_interpolator = 0
 	case Event_Fight_Player_Turn:
 		f.state = .Player_Turn
-
 	}
 
 }
@@ -439,6 +426,53 @@ ui_player_turn :: proc(f: ^World_Fight, queue: ^Event_Queue) {
 	}
 }
 
+ui_player_defending :: proc(f: ^World_Fight, queue: ^Event_Queue) {
+	if rl.GuiButton(
+		{
+			x = PADDING,
+			y = f32(rl.GetScreenHeight()) - BUTTON_SIZE.y - PADDING,
+			width = BUTTON_SIZE.x,
+			height = BUTTON_SIZE.y,
+		},
+		"Deflect",
+	) {
+		event_dispatch(queue, Event_Fight_Player_Deflect{})
+	}
+
+	if rl.GuiButton(
+		{
+			x = PADDING,
+			y = f32(rl.GetScreenHeight()) - BUTTON_SIZE.y * 2 - BUTTON_GAP - PADDING,
+			width = BUTTON_SIZE.x,
+			height = BUTTON_SIZE.y,
+		},
+		"Parry",
+	) {
+		event_dispatch(queue, Event_Fight_Player_Parry{})
+	}
+}
+
+@(private = "file")
+draw_background :: proc(texture: rl.Texture2D) {
+	rl.ClearBackground(rl.BLACK)
+	aspect := f32(texture.width) / f32(texture.height)
+	width: f32 = f32(rl.GetScreenWidth()) + 100
+	height: f32 = width / aspect
+	rl.DrawTexturePro(
+		texture,
+		{width = f32(texture.width), height = f32(texture.height)},
+		{
+			x = -50,
+			y = f32(rl.GetScreenHeight()) - FIGHT_LINE - height * 0.8,
+			width = width,
+			height = height,
+		},
+		0,
+		0,
+		rl.WHITE,
+	)
+}
+
 @(private = "file")
 draw_ui_box :: proc() {
 	rl.DrawRectangleRec(
@@ -448,7 +482,7 @@ draw_ui_box :: proc() {
 			width = f32(rl.GetScreenWidth()),
 			height = UI_HEIGHT,
 		},
-		rl.WHITE,
+		rl.BLACK,
 	)
 }
 
@@ -459,7 +493,7 @@ draw_player_hp :: proc(f: ^World_Fight) {
 	rl.DrawText(
 		text,
 		PADDING,
-		rl.GetScreenHeight() - UI_HEIGHT - font_size * 2 - PADDING,
+		rl.GetScreenHeight() - UI_HEIGHT - font_size * 2 - PADDING + 100,
 		font_size,
 		rl.WHITE,
 	)
@@ -473,14 +507,14 @@ draw_enemy_hp :: proc(f: ^World_Fight) {
 	bounds :: proc(ratio: f32) -> rl.Rectangle {
 		return rl.Rectangle {
 			x = f32(rl.GetScreenWidth()) - width - PADDING,
-			y = f32(rl.GetScreenHeight()) - height - UI_HEIGHT - PADDING,
+			y = f32(rl.GetScreenHeight()) - height - UI_HEIGHT - PADDING + 100,
 			width = width * ratio,
 			height = height,
 		}
 	}
 
 	rl.DrawRectangleRec(bounds(ratio), rl.RED)
-	rl.DrawRectangleLinesEx(bounds(1), 1, rl.BLACK)
+	rl.DrawRectangleLinesEx(bounds(1), 1, rl.WHITE)
 
 	font_size :: 32
 	text := fmt.ctprintf("HP: %d/%d", f.enemy.hp, f.enemy.max_hp)
@@ -488,7 +522,7 @@ draw_enemy_hp :: proc(f: ^World_Fight) {
 	rl.DrawText(
 		text,
 		rl.GetScreenWidth() - (width + text_width) / 2 - PADDING,
-		rl.GetScreenHeight() - height - font_size - UI_HEIGHT - PADDING,
+		rl.GetScreenHeight() - height - font_size - UI_HEIGHT - PADDING + 100,
 		font_size,
 		rl.WHITE,
 	)

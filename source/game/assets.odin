@@ -42,11 +42,12 @@ assets_unload :: proc(assets: ^Assets) {
 }
 
 Assets_Sprites :: struct {
-	player:    atlas.Atlas,
-	grass:     rl.Texture2D,
-	main_menu: rl.Texture2D,
-	heart:     rl.Texture2D,
-	shield:    rl.Texture2D,
+	player:           atlas.Atlas,
+	grass:            rl.Texture2D,
+	main_menu:        rl.Texture2D,
+	heart:            rl.Texture2D,
+	shield:           rl.Texture2D,
+	fight_background: rl.Texture2D,
 }
 
 Assets_Audio :: struct {
@@ -80,6 +81,7 @@ assets_sprites_load :: proc(sprites_dir: string) -> Assets_Sprites {
 		main_menu = load_sprite(sprites_dir, "main_menu.png"),
 		heart = load_sprite(sprites_dir, "heart.png"),
 		shield = load_sprite(sprites_dir, "shield.png"),
+		fight_background = load_sprite(sprites_dir, "fight-background.png"),
 	}
 }
 
@@ -90,6 +92,7 @@ assets_sprites_unload :: proc(sprites: ^Assets_Sprites) {
 	rl.UnloadTexture(sprites.main_menu)
 	rl.UnloadTexture(sprites.heart)
 	rl.UnloadTexture(sprites.shield)
+	rl.UnloadTexture(sprites.fight_background)
 }
 
 @(private = "file")

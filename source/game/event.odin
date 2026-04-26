@@ -57,9 +57,11 @@ Event_Fight_Player_Parry :: struct {}
 
 Event_Fight_Player_Deflect :: struct {}
 
+Event_Fight_Enemy_Warn :: struct {}
+
 Event_Fight_Enemy_Attack_Melee :: struct {}
 
-Event_Fight_Enemy_Attack_Range :: struct {}
+Event_Fight_Enemy_Attack_Ranged :: struct {}
 
 Event_Lose :: struct {}
 
@@ -83,11 +85,12 @@ Event :: union {
 	Event_Fight_Player_Parry,
 	Event_Fight_Player_Deflect,
 	Event_Fight_Player_Turn,
+	Event_Fight_Enemy_Warn,
 	Event_Fight_Enemy_Turn,
 	Event_Transition,
 	Event_Button_Pressed,
 	Event_Fight_Enemy_Attack_Melee,
-	Event_Fight_Enemy_Attack_Range,
+	Event_Fight_Enemy_Attack_Ranged,
 }
 
 Event_Queue :: struct {
