@@ -45,6 +45,24 @@ Event_Player_Stopped :: struct {
 Event_Transition :: struct {}
 
 Event_Button_Pressed :: struct {}
+Event_Fight_Player_Attack_Melee :: struct {
+	damage: int,
+}
+
+Event_Fight_Player_Attack_Range :: struct {
+	damage: int,
+}
+
+Event_Fight_Player_Parry :: struct {}
+
+Event_Fight_Player_Deflect :: struct {}
+
+Event_Fight_Enemy_Attack_Melee :: struct {}
+
+Event_Fight_Enemy_Attack_Range :: struct {}
+
+Event_Lose :: struct {}
+
 
 Event :: union {
 	Event_Start_Game,
@@ -58,11 +76,21 @@ Event :: union {
 	Event_Player_Stopped,
 	Event_Fight_Encounter,
 	Event_Fight_Begin,
+	Event_Lose,
 	Event_Fight_Win,
+	Event_Fight_Player_Attack_Melee,
+	Event_Fight_Player_Attack_Range,
+	Event_Fight_Player_Parry,
+	Event_Fight_Player_Deflect,
 	Event_Fight_Player_Turn,
 	Event_Fight_Enemy_Turn,
+<<<<<<< HEAD
 	Event_Transition,
 	Event_Button_Pressed,
+=======
+	Event_Fight_Enemy_Attack_Melee,
+	Event_Fight_Enemy_Attack_Range,
+>>>>>>> a0acc02 (implement base fight mech)
 }
 
 Event_Queue :: struct {

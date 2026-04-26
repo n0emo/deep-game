@@ -1,12 +1,19 @@
 package game
 
 World :: struct {
+<<<<<<< HEAD
 	state:           World_State,
 	overworld:       World_Overworld,
 	fight:           World_Fight,
 	tilemaps:        [2]Tile_Map,
 	current_tilemap: int,
 	assets:          ^Assets,
+=======
+	state:     World_State,
+	overworld: World_Overworld,
+	fight:     World_Fight,
+	assets:    ^Assets,
+>>>>>>> a0acc02 (implement base fight mech)
 }
 
 @(private = "file")
@@ -15,6 +22,7 @@ World_State :: enum {
 	Fight,
 }
 
+<<<<<<< HEAD
 world_make :: proc(assets: ^Assets) -> ^World {
 	tilemap_1: Tile_Map
 	tilemap_2: Tile_Map
@@ -37,6 +45,10 @@ world_make :: proc(assets: ^Assets) -> ^World {
 	world.overworld = world_overworld_make(assets, &world.tilemaps[0])
 
 	return world
+=======
+world_make :: proc(assets: ^Assets) -> World {
+	return {assets = assets, state = .Overworld, overworld = world_overworld_make(assets)}
+>>>>>>> a0acc02 (implement base fight mech)
 }
 
 world_destroy :: proc(w: ^World) {
@@ -54,7 +66,7 @@ world_update :: proc(w: ^World, queue: ^Event_Queue) {
 	case .Overworld:
 		world_overworld_update(&w.overworld, queue)
 	case .Fight:
-		world_fight_update(&w.fight)
+		world_fight_update(&w.fight, queue)
 	}
 }
 
@@ -87,7 +99,7 @@ world_handle_event :: proc(w: ^World, event: Event) {
 	#partial switch e in event {
 	case Event_Fight_Begin:
 		w.state = .Fight
-		w.fight = world_fight_make(e.hp, e.enemy_name)
+		w.fight = world_fight_make(w.assets, e.hp, e.enemy_name)
 	case Event_Fight_Win:
 		w.state = .Overworld
 	case Event_Transition:

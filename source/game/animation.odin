@@ -9,11 +9,16 @@ Animation :: struct {
 	time:    f32,
 	index:   int,
 	frames:  []Animation_Frame,
+	loop:    bool,
 }
 
-animation_make :: proc(texture: rl.Texture2D, frames: []Animation_Frame) -> Animation {
+animation_make :: proc(
+	texture: rl.Texture2D,
+	frames: []Animation_Frame,
+	loop: bool = true,
+) -> Animation {
 	frames_clone := slice.clone(frames)
-	return Animation{texture = texture, frames = frames_clone, time = 0, index = 0}
+	return Animation{texture = texture, frames = frames_clone, time = 0, index = 0, loop = loop}
 }
 
 animation_destroy :: proc(animation: ^Animation) {
@@ -26,9 +31,18 @@ animation_update :: proc(animation: ^Animation) {
 		animation.time -= animation.frames[animation.index].duration
 		animation.index += 1
 		if animation.index >= len(animation.frames) {
-			animation.index = 0
+			if animation.loop {
+				animation.index = 0
+			} else {
+				animation.index = len(animation.frames) - 1
+			}
 		}
 	}
+}
+
+animation_reset :: proc(animation: ^Animation) {
+	animation.time = 0
+	animation.index = 0
 }
 
 animation_draw :: proc(animation: ^Animation, pos: rl.Vector2) {

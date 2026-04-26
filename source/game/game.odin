@@ -86,6 +86,9 @@ game_handle_event :: proc(g: ^Game_Memory, event: Event) {
 		g.world = world_make(g.assets)
 	case Event_Menu:
 		g.state = .Menu
+	case Event_Lose:
+		// Implement Game Over screen
+		g.state = .Menu
 	}
 
 	switch g.state {
