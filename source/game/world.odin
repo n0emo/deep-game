@@ -1,9 +1,12 @@
 package game
 
 World :: struct {
-	state:     World_State,
-	overworld: World_Overworld,
-	fight:     World_Fight,
+	state:           World_State,
+	overworld:       World_Overworld,
+	fight:           World_Fight,
+	tilemaps:        [2]Tile_Map,
+	current_tilemap: int,
+	assets:          ^Assets,
 }
 
 @(private = "file")
@@ -12,15 +15,41 @@ World_State :: enum {
 	Fight,
 }
 
-world_make :: proc(assets: ^Assets) -> World {
-	return {state = .Overworld, overworld = world_overworld_make(assets), fight = World_Fight{}}
+world_make :: proc(assets: ^Assets) -> ^World {
+	tilemap_1: Tile_Map
+	tilemap_2: Tile_Map
+	ok: bool
+	tilemap_1, ok = tilemap_make(&assets.tilemap_level_1)
+	tilemap_2, ok = tilemap_make(&assets.tilemap_level_2)
+	if !ok {
+		panic("Could not load tilemap")
+	}
+
+	tilemaps := [2]Tile_Map{tilemap_1, tilemap_2}
+
+	world := new(World)
+	world^ = {
+		state           = .Overworld,
+		tilemaps        = tilemaps,
+		current_tilemap = 0,
+		assets          = assets,
+	}
+	world.overworld = world_overworld_make(assets, &world.tilemaps[0])
+
+	return world
 }
 
 world_destroy :: proc(w: ^World) {
 	world_overworld_destroy(&w.overworld)
+	free(w)
 }
 
 world_update :: proc(w: ^World, queue: ^Event_Queue) {
+	if w.current_tilemap == len(w.tilemaps) {
+		event_dispatch(queue, Event_Menu{})
+		return
+	}
+
 	switch w.state {
 	case .Overworld:
 		world_overworld_update(&w.overworld, queue)
@@ -61,5 +90,10 @@ world_handle_event :: proc(w: ^World, event: Event) {
 		w.fight = world_fight_make(e.hp, e.enemy_name)
 	case Event_Fight_Win:
 		w.state = .Overworld
+	case Event_Transition:
+		w.current_tilemap += 1
+		if w.current_tilemap < len(w.tilemaps) {
+			w.overworld = world_overworld_make(w.assets, &w.tilemaps[w.current_tilemap])
+		}
 	}
 }

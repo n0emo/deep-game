@@ -40,6 +40,8 @@ Event_Player_Stopped :: struct {
 	direction: Direction,
 }
 
+Event_Transition :: struct {}
+
 Event :: union {
 	Event_Start_Game,
 	Event_Exit,
@@ -54,6 +56,7 @@ Event :: union {
 	Event_Fight_Win,
 	Event_Fight_Player_Turn,
 	Event_Fight_Enemy_Turn,
+	Event_Transition,
 }
 
 Event_Queue :: struct {

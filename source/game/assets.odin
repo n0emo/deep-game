@@ -12,6 +12,7 @@ Assets :: struct {
 	audio:           Assets_Audio,
 	tiled_loader:    ^tiled.Loader,
 	tilemap_level_1: tiled.Tilemap,
+	tilemap_level_2: tiled.Tilemap,
 }
 
 assets_load :: proc(assets_dir: string = "assets") -> ^Assets {
@@ -19,11 +20,16 @@ assets_load :: proc(assets_dir: string = "assets") -> ^Assets {
 	assets.sprites = assets_sprites_load(fmt.tprintf("%s/%s", assets_dir, "sprites"))
 	assets.audio = assets_audio_load(slashpath.join({assets_dir, "audio"}, context.temp_allocator))
 	assets.tiled_loader = tiled.loader_make()
+
 	tilemap_level_1, _ := tiled.tilemap_load(assets.tiled_loader, "./assets/tilemaps/level-1.tmj")
+	assets.tilemap_level_1 = tilemap_level_1
+	tilemap_level_2, _ := tiled.tilemap_load(assets.tiled_loader, "./assets/tilemaps/level-2.tmj")
+	assets.tilemap_level_2 = tilemap_level_2
+
 	for _, tileset in assets.tiled_loader.tilesets {
 		rl.SetTextureFilter(tileset.texture, .POINT)
 	}
-	assets.tilemap_level_1 = tilemap_level_1
+
 
 	return assets
 }

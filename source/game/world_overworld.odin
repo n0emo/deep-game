@@ -14,18 +14,14 @@ ENCOUNTER_ROTATION_FACTOR :: 15
 BACKGROUND_COLOR := rl.GetColor(0x29211dff)
 
 World_Overworld :: struct {
-	tilemap:         Tile_Map,
+	tilemap:         ^Tile_Map,
 	player:          Overworld_Player,
 	camera:          rl.Camera2D,
 	encountering:    bool,
 	encounter_state: Encounter_State,
 }
 
-world_overworld_make :: proc(assets: ^Assets) -> World_Overworld {
-	tilemap, ok := tilemap_make(&assets.tilemap_level_1)
-	if !ok {
-		panic("Could not load tilemap")
-	}
+world_overworld_make :: proc(assets: ^Assets, tilemap: ^Tile_Map) -> World_Overworld {
 	player_tile := [2]i32{i32(tilemap.spawnpoint.x), i32(tilemap.spawnpoint.y)} / TILE_SIZE
 	player := player_make(&assets.sprites.player, player_tile)
 	camera := rl.Camera2D{}
@@ -34,7 +30,6 @@ world_overworld_make :: proc(assets: ^Assets) -> World_Overworld {
 }
 
 world_overworld_destroy :: proc(w: ^World_Overworld) {
-	tilemap_destroy(&w.tilemap)
 }
 
 world_overworld_update :: proc(w: ^World_Overworld, queue: ^Event_Queue) {
@@ -42,12 +37,12 @@ world_overworld_update :: proc(w: ^World_Overworld, queue: ^Event_Queue) {
 	world_update_camera(w)
 
 	player_rect := rl.Rectangle{w.player.pos.x, w.player.pos.y, TILE_SIZE, TILE_SIZE}
-	if obj, ok := tilemap_is_collides_with_object(&w.tilemap, player_rect); ok {
+	if obj, ok := tilemap_is_collides_with_object(w.tilemap, player_rect); ok {
 		switch prop in obj.properties {
 		case Object_Spawnpoint:
 		// What are you supposed to do with spawnpoint?
 		case Object_Transition:
-			event_dispatch(queue, Event_Menu{})
+			event_dispatch(queue, Event_Transition{})
 		case Object_Enemy:
 			event_dispatch(queue, Event_Fight_Encounter{enemy = prop, obj = obj})
 			rl.TraceLog(.INFO, "Fight begins with %s", prop.enemy_name)
@@ -68,7 +63,7 @@ world_overworld_update :: proc(w: ^World_Overworld, queue: ^Event_Queue) {
 world_overworld_draw :: proc(w: ^World_Overworld) {
 	rl.ClearBackground(BACKGROUND_COLOR)
 	rl.BeginMode2D(w.camera)
-	tilemap_draw(&w.tilemap, rl.Vector2(0))
+	tilemap_draw(w.tilemap, rl.Vector2(0))
 	player_draw(&w.player)
 	rl.EndMode2D()
 }
@@ -78,7 +73,7 @@ world_overworld_ui :: proc(w: ^World_Overworld, queue: ^Event_Queue) {}
 world_overworld_handle_event :: proc(w: ^World_Overworld, event: Event) {
 	#partial switch e in event {
 	case Event_Fight_Encounter:
-		tilemap_delete_object(&w.tilemap, e.obj.id)
+		tilemap_delete_object(w.tilemap, e.obj.id)
 		w.encountering = true
 		w.encounter_state = encounter_state_make(e)
 	case Event_Input_Go:
@@ -87,7 +82,7 @@ world_overworld_handle_event :: proc(w: ^World_Overworld, event: Event) {
 		}
 
 		next_tile := w.player.tile + direction_to_vec_i32(e.direction)
-		if tilemap_tile_passable(&w.tilemap, next_tile) {
+		if tilemap_tile_passable(w.tilemap, next_tile) {
 			if _, ok := w.player.state.(Player_Idle); ok {
 				player_start_moving(&w.player, e.direction)
 			}

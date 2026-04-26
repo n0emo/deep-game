@@ -8,7 +8,7 @@ PIXEL_WINDOW_HEIGHT :: 180
 Game_Memory :: struct {
 	assets:      ^Assets,
 	state:       Game_State,
-	world:       World,
+	world:       ^World,
 	main_menu:   Main_Menu,
 	event_queue: Event_Queue,
 	input:       Input,
@@ -71,7 +71,7 @@ game_update :: proc(g: ^Game_Memory) {
 	case .Exit:
 	case .Menu:
 	case .Game:
-		world_update(&g.world, &g.event_queue)
+		world_update(g.world, &g.event_queue)
 	}
 }
 
@@ -91,7 +91,7 @@ game_handle_event :: proc(g: ^Game_Memory, event: Event) {
 	switch g.state {
 	case .Exit:
 	case .Game:
-		world_handle_event(&g.world, event)
+		world_handle_event(g.world, event)
 	case .Menu:
 		main_menu_handle_event(&g.main_menu, event)
 	}
@@ -104,7 +104,7 @@ game_draw :: proc(g: ^Game_Memory) {
 	case .Exit:
 	case .Menu:
 	case .Game:
-		world_draw(&g.world)
+		world_draw(g.world)
 	}
 
 	switch g.state {
@@ -112,7 +112,7 @@ game_draw :: proc(g: ^Game_Memory) {
 	case .Menu:
 		main_menu_ui(&g.main_menu, &g.event_queue)
 	case .Game:
-		world_ui(&g.world, &g.event_queue)
+		world_ui(g.world, &g.event_queue)
 	}
 
 	rl.DrawFPS(10, 10)
