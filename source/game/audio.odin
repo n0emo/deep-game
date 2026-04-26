@@ -44,6 +44,8 @@ audio_system_handle_event :: proc(a: ^Audio_System, event: Event) {
 		switch_music(a, &a.assets.music_menu)
 	case Event_Start_Game:
 		switch_music(a, &a.assets.music_overworld)
+	case Event_Fight_Encounter:
+		switch_music(a, &a.assets.jingle_encounter, loop = false)
 	case Event_Fight_Begin:
 		switch_music(a, &a.assets.music_battle)
 	case Event_Fight_Win:
@@ -52,17 +54,28 @@ audio_system_handle_event :: proc(a: ^Audio_System, event: Event) {
 		a.master_volume = e.master_volume
 		a.music_volume = e.music_volume
 		a.sfx_volume = e.sfx_volume
+	case Event_Button_Pressed:
+		play_sound(a, a.assets.fx_button)
+	case Event_Player_Moving:
+		play_sound(a, a.assets.fx_steps)
 	}
 }
 
 @(private = "file")
-switch_music :: proc(a: ^Audio_System, m: ^rl.Music) {
+switch_music :: proc(a: ^Audio_System, m: ^rl.Music, loop: bool = true) {
 	if a.current_music != nil {
 		rl.StopMusicStream(a.current_music^)
 	}
 
 	a.current_music = m
 	if m != nil {
+		m.looping = loop
 		rl.PlayMusicStream(m^)
 	}
+}
+
+@(private = "file")
+play_sound :: proc(a: ^Audio_System, s: rl.Sound) {
+	rl.SetSoundVolume(s, a.sfx_volume)
+	rl.PlaySound(s)
 }

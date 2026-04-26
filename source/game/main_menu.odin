@@ -88,14 +88,17 @@ menu_panel :: proc(size: rl.Vector2) {
 menu_home_buttons :: proc(m: ^Main_Menu, queue: ^Event_Queue) {
 	if button_centered("Start Game", BUTTON_SIZE, {0, -60}) {
 		event_dispatch(queue, Event_Start_Game{})
+		event_dispatch(queue, Event_Button_Pressed{})
 	}
 
 	if button_centered("Settings", BUTTON_SIZE, {0, 0}) {
 		event_dispatch(queue, Event_Menu_Settings{})
+		event_dispatch(queue, Event_Button_Pressed{})
 	}
 
 	if button_centered("Exit", BUTTON_SIZE, {0, 60}) {
 		event_dispatch(queue, Event_Exit{})
+		event_dispatch(queue, Event_Button_Pressed{})
 	}
 }
 
@@ -106,6 +109,7 @@ menu_settings_buttons :: proc(m: ^Main_Menu, queue: ^Event_Queue) {
 	slider_centered("SFX", &m.settings.sfx_volume, SLIDER_SIZE, {0, 30})
 	if button_centered("Back", BUTTON_SIZE, {0, 90}) {
 		event_dispatch(queue, Event_Menu_Home{})
+		event_dispatch(queue, Event_Button_Pressed{})
 	}
 
 	event_dispatch(

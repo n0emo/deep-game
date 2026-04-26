@@ -36,11 +36,15 @@ Event_Input_Go :: struct {
 	direction: Direction,
 }
 
+Event_Player_Moving :: struct {}
+
 Event_Player_Stopped :: struct {
 	direction: Direction,
 }
 
 Event_Transition :: struct {}
+
+Event_Button_Pressed :: struct {}
 
 Event :: union {
 	Event_Start_Game,
@@ -50,6 +54,7 @@ Event :: union {
 	Event_Menu_Settings,
 	Event_Change_Audio_Volume,
 	Event_Input_Go,
+	Event_Player_Moving,
 	Event_Player_Stopped,
 	Event_Fight_Encounter,
 	Event_Fight_Begin,
@@ -57,6 +62,7 @@ Event :: union {
 	Event_Fight_Player_Turn,
 	Event_Fight_Enemy_Turn,
 	Event_Transition,
+	Event_Button_Pressed,
 }
 
 Event_Queue :: struct {

@@ -7,7 +7,7 @@ import rl "vendor:raylib"
 CAMERA_LERP :: 0.08
 PLAYER_SPEED :: 7
 PLAYER_NON_IDLE_TIME :: 0.1
-ENCOUNTER_TIME :: 0.7
+ENCOUNTER_TIME :: 2.5
 ENCOUNTER_ZOOM_FACTOR :: 12
 ENCOUNTER_ROTATION_FACTOR :: 15
 
@@ -102,6 +102,7 @@ Overworld_Player :: struct {
 	animations_idle:   [Direction]Animation,
 	animations_moving: [Direction]Animation,
 	direction:         Direction,
+	started_moving:    bool,
 }
 
 @(private = "file")
@@ -215,6 +216,11 @@ player_update :: proc(player: ^Overworld_Player, queue: ^Event_Queue) {
 		player.animation_current = &player.animations_idle[.Down]
 	}
 
+	if player.started_moving {
+		player.started_moving = false
+		event_dispatch(queue, Event_Player_Moving{})
+	}
+
 	animation_update(player.animation_current)
 
 	player_reset_position(player)
@@ -244,6 +250,7 @@ player_draw :: proc(player: ^Overworld_Player) {
 
 @(private = "file")
 player_start_moving :: proc(player: ^Overworld_Player, direction: Direction) {
+	player.started_moving = true
 	dir_vec := direction_to_vec(direction)
 	old_tile := player.tile
 	new_tile := old_tile + {i32(dir_vec.x), i32(dir_vec.y)}
