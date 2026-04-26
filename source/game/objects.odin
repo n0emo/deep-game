@@ -12,6 +12,12 @@ Object :: struct {
 	properties: Object_Properties,
 }
 
+Object_Properties :: union {
+	Object_Spawnpoint,
+	Object_Transition,
+	Object_Enemy,
+}
+
 Object_Spawnpoint :: struct {}
 
 Object_Transition :: struct {}
@@ -19,12 +25,6 @@ Object_Transition :: struct {}
 Object_Enemy :: struct {
 	hp:         int,
 	enemy_name: string,
-}
-
-Object_Properties :: union {
-	Object_Spawnpoint,
-	Object_Transition,
-	Object_Enemy,
 }
 
 object_make :: proc(obj: tiled.Object) -> (result: Object) {

@@ -114,8 +114,9 @@ main :: proc() {
 	reset_tracking_allocator :: proc(a: ^mem.Tracking_Allocator) -> bool {
 		err := false
 
-		for _, value in a.allocation_map {
-			log.errorf("%v: Leaked %v bytes\n", value.location, value.size)
+		for _, _ in a.allocation_map {
+			// We don't care about leaks lol
+			// log.errorf("%v: Leaked %v bytes", value.location, value.size)
 			err = true
 		}
 

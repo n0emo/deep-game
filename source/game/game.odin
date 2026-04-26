@@ -27,13 +27,11 @@ game_make :: proc() -> ^Game_Memory {
 		queue = make([dynamic]Event),
 	}
 	assets := assets_load()
-	world := world_make(assets)
 	main_menu := main_menu_make(assets)
 	input := input_make()
 
 	g^ = Game_Memory {
 		assets      = assets,
-		world       = world,
 		main_menu   = main_menu,
 		state       = .Menu,
 		event_queue = event_queue,
@@ -43,7 +41,6 @@ game_make :: proc() -> ^Game_Memory {
 }
 
 game_destroy :: proc(g: ^Game_Memory) {
-	world_destroy(&g.world)
 	assets_unload(g.assets)
 
 	free(g)
@@ -76,6 +73,7 @@ game_handle_event :: proc(g: ^Game_Memory, event: Event) {
 		g.state = .Exit
 	case Event_Start_Game:
 		g.state = .Game
+		g.world = world_make(g.assets)
 	case Event_Menu:
 		g.state = .Menu
 	}

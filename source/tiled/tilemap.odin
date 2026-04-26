@@ -204,11 +204,7 @@ tilemap_descriptor_load :: proc(
 	data_size: c.int
 	data := rl.LoadFileData(cpath, &data_size)
 
-	root_value, parse_err := json.parse(
-		data[:data_size],
-		spec = .JSON5,
-		allocator = context.temp_allocator,
-	)
+	root_value, parse_err := json.parse(data[:data_size], spec = .JSON5)
 	if parse_err != nil {
 		err = .Invalid_Data
 		return
