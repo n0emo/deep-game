@@ -2,7 +2,9 @@ package game
 
 import atlas "../atlas"
 import "core:math/linalg"
+import "core:math/rand"
 import rl "vendor:raylib"
+
 
 CAMERA_LERP :: 0.08
 PLAYER_SPEED :: 7
@@ -10,23 +12,33 @@ PLAYER_NON_IDLE_TIME :: 0.1
 ENCOUNTER_TIME :: 2.5
 ENCOUNTER_ZOOM_FACTOR :: 12
 ENCOUNTER_ROTATION_FACTOR :: 15
+RANDOM_ENEMIES_COUNT :: 128
+RANDOM_ENCOUNTER_PROBABILITY :: 0.05
 
 BACKGROUND_COLOR := rl.GetColor(0x29211dff)
 
 World_Overworld :: struct {
-	tilemap:         ^Tile_Map,
-	player:          Overworld_Player,
-	camera:          rl.Camera2D,
-	encountering:    bool,
-	encounter_state: Encounter_State,
+	tilemap:               ^Tile_Map,
+	player:                Overworld_Player,
+	camera:                rl.Camera2D,
+	encountering:          bool,
+	encounter_state:       Encounter_State,
+	random_encounter_pool: [dynamic; RANDOM_ENEMIES_COUNT]Object,
+	random_encounter:      bool,
 }
 
-world_overworld_make :: proc(assets: ^Assets, tilemap: ^Tile_Map) -> World_Overworld {
+world_overworld_make :: proc(assets: ^Assets, tilemap: ^Tile_Map, scale: int) -> World_Overworld {
 	player_tile := [2]i32{i32(tilemap.spawnpoint.x), i32(tilemap.spawnpoint.y)} / TILE_SIZE
 	player := player_make(&assets.sprites.player, player_tile)
 	camera := rl.Camera2D{}
+	pool := [dynamic; RANDOM_ENEMIES_COUNT]Object {
+		Object{id = -1, properties = Object_Enemy{hp = 10 * scale, enemy_name = "melee"}},
+		Object{id = -1, properties = Object_Enemy{hp = 12 * scale, enemy_name = "melee"}},
+		Object{id = -1, properties = Object_Enemy{hp = 10 * scale, enemy_name = "melee"}},
+		Object{id = -1, properties = Object_Enemy{hp = 10 * scale, enemy_name = "melee"}},
+	}
 
-	return {tilemap = tilemap, player = player, camera = camera}
+	return {tilemap = tilemap, player = player, camera = camera, random_encounter_pool = pool}
 }
 
 world_overworld_destroy :: proc(w: ^World_Overworld) {
@@ -48,7 +60,15 @@ world_overworld_update :: proc(w: ^World_Overworld, queue: ^Event_Queue) {
 			rl.TraceLog(.INFO, "Fight begins with %s", prop.enemy_name)
 		}
 	}
-
+	if w.random_encounter && !w.encountering {
+		if enemy, ok := pop_safe(&w.random_encounter_pool); ok {
+			event_dispatch(
+				queue,
+				Event_Fight_Encounter{obj = enemy, enemy = enemy.properties.(Object_Enemy)},
+			)
+		}
+		w.random_encounter = false
+	}
 	if w.encountering {
 		s := &w.encounter_state
 		s.time += rl.GetFrameTime()
@@ -80,7 +100,6 @@ world_overworld_handle_event :: proc(w: ^World_Overworld, event: Event) {
 		if w.encountering {
 			return
 		}
-
 		next_tile := w.player.tile + direction_to_vec_i32(e.direction)
 		if tilemap_tile_passable(w.tilemap, next_tile) {
 			if _, ok := w.player.state.(Player_Idle); ok {
@@ -88,6 +107,11 @@ world_overworld_handle_event :: proc(w: ^World_Overworld, event: Event) {
 			}
 		} else {
 			w.player.direction = e.direction
+		}
+	case Event_Player_Stopped:
+		if rand.float32() < RANDOM_ENCOUNTER_PROBABILITY {
+			w.random_encounter = true
+
 		}
 	}
 }

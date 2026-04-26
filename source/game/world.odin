@@ -34,7 +34,7 @@ world_make :: proc(assets: ^Assets) -> ^World {
 		current_tilemap = 0,
 		assets          = assets,
 	}
-	world.overworld = world_overworld_make(assets, &world.tilemaps[0])
+	world.overworld = world_overworld_make(assets, &world.tilemaps[0], world.current_tilemap + 1)
 
 	return world
 }
@@ -93,7 +93,11 @@ world_handle_event :: proc(w: ^World, event: Event) {
 	case Event_Transition:
 		w.current_tilemap += 1
 		if w.current_tilemap < len(w.tilemaps) {
-			w.overworld = world_overworld_make(w.assets, &w.tilemaps[w.current_tilemap])
+			w.overworld = world_overworld_make(
+				w.assets,
+				&w.tilemaps[w.current_tilemap],
+				w.current_tilemap + 1,
+			)
 		}
 	}
 }

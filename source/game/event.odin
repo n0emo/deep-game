@@ -68,6 +68,8 @@ Event_Fight_Enemy_Attack_Ranged :: struct {}
 
 Event_Lose :: struct {}
 
+Event_Fight_Random_Encounter :: struct {}
+
 Event :: union {
 	Event_Start_Game,
 	Event_Exit,
@@ -94,6 +96,7 @@ Event :: union {
 	Event_Button_Pressed,
 	Event_Fight_Enemy_Attack_Melee,
 	Event_Fight_Enemy_Attack_Ranged,
+	Event_Fight_Random_Encounter,
 }
 
 Event_Queue :: struct {
