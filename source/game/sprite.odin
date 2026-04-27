@@ -39,8 +39,6 @@ sprite_draw :: proc(
 	}
 
 	if mirror_horizontal {
-		frame.x += frame.width
-		frame.y += frame.height
 		frame.width *= -1
 		frame.height *= -1
 	}

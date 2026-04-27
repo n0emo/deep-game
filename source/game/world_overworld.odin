@@ -13,7 +13,7 @@ ENCOUNTER_TIME :: 2.5
 ENCOUNTER_ZOOM_FACTOR :: 12
 ENCOUNTER_ROTATION_FACTOR :: 15
 RANDOM_ENEMIES_COUNT :: 128
-RANDOM_ENCOUNTER_PROBABILITY :: 0.05
+RANDOM_ENCOUNTER_PROBABILITY :: 0.03
 
 BACKGROUND_COLOR := rl.GetColor(0x29211dff)
 
@@ -32,9 +32,16 @@ world_overworld_make :: proc(assets: ^Assets, tilemap: ^Tile_Map, scale: int) ->
 	player := player_make(assets.sprites.player, player_tile)
 	camera := rl.Camera2D{}
 	pool := [dynamic; RANDOM_ENEMIES_COUNT]Object {
-		Object{id = -1, properties = Object_Enemy{hp = 10 * scale, enemy_name = "melee"}},
-		Object{id = -1, properties = Object_Enemy{hp = 12 * scale, enemy_name = "melee"}},
-		Object{id = -1, properties = Object_Enemy{hp = 10 * scale, enemy_name = "melee"}},
+		Object{id = -1, properties = Object_Enemy{hp = 120 * scale, enemy_name = "servitor"}},
+		Object{id = -1, properties = Object_Enemy{hp = 100 * scale, enemy_name = "melee"}},
+		Object{id = -1, properties = Object_Enemy{hp = 90 * scale, enemy_name = "range"}},
+		Object{id = -1, properties = Object_Enemy{hp = 82 * scale, enemy_name = "gear"}},
+		Object{id = -1, properties = Object_Enemy{hp = 70 * scale, enemy_name = "turret"}},
+		Object{id = -1, properties = Object_Enemy{hp = 60 * scale, enemy_name = "drone"}},
+		Object{id = -1, properties = Object_Enemy{hp = 50 * scale, enemy_name = "range"}},
+		Object{id = -1, properties = Object_Enemy{hp = 40 * scale, enemy_name = "range"}},
+		Object{id = -1, properties = Object_Enemy{hp = 30 * scale, enemy_name = "melee"}},
+		Object{id = -1, properties = Object_Enemy{hp = 20 * scale, enemy_name = "range"}},
 		Object{id = -1, properties = Object_Enemy{hp = 10 * scale, enemy_name = "melee"}},
 	}
 

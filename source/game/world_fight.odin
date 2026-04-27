@@ -48,7 +48,7 @@ ENEMY_ATTACK_VELOCITY :: 0.5
 PARRY_OFFSET :: 150
 
 @(private = "file")
-PARRY_WINDOW_SIZE :: 0.2
+PARRY_WINDOW_SIZE :: 0.15
 
 @(private = "file")
 PARRY_BOUND_HEIGHT :: 100
@@ -216,12 +216,12 @@ enemy_make :: proc(
 	case "servitor":
 		enemy.range_damage_reduction = 0.3
 		enemy.melee_damage_reduction = 0.7
-		enemy.melee_attack_probability = 0.0
+		enemy.melee_attack_probability = 0.5
 		enemy.range_damage = 1
-		enemy.melee_damage = 0
+		enemy.melee_damage = 1
 		enemy.animation_idle = assets.animations.enemy_fanatic_idle
-		enemy.animation_attack_melee = assets.animations.enemy_fanatic_melee_attack
-		enemy.animation_attack_ranged = assets.animations.enemy_fanatic_ranged_attack
+		enemy.animation_attack_melee = assets.animations.enemy_fanatic_ranged_attack
+		enemy.animation_attack_ranged = assets.animations.enemy_fanatic_melee_attack
 		enemy.projectile = assets.sprites.projectile_spikes
 	case "last_guardian":
 		enemy.range_damage_reduction = 0.5
@@ -451,7 +451,7 @@ fight_panel_ui :: proc(f: ^World_Fight, queue: ^Event_Queue) {
 			f32(rl.GetScreenHeight()) - FIGHT_LINE - 64,
 		}
 		sprite_draw(
-			f.player.projectile,
+			f.enemy.projectile,
 			center,
 			scale = SPRITE_SCALE,
 			centered = true,
@@ -633,7 +633,7 @@ draw_ui_box :: proc() {
 draw_player_stats :: proc(f: ^World_Fight) {
 	font_size :: 32
 	text := fmt.ctprintf(
-		"HP:%v \nShield:%v \nMelee dmg.:%v\n Range dmg.:%v",
+		"HP:%v      Melee dmg.:%v \nShield:%v Range dmg.:%v",
 		f.player.hp,
 		f.player.shield,
 		f.player.melee_damage,
