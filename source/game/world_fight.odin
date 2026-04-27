@@ -53,8 +53,11 @@ PARRY_WINDOW_SIZE :: 0.2
 @(private = "file")
 PARRY_BOUND_HEIGHT :: 100
 
+@(private = "file")
 PARRY_LINE_THICKNESS :: 10
 
+@(private = "file")
+WIN_JINGLE_TIME :: 2.7
 
 World_Fight :: struct {
 	player:                  World_Fight_Player,
@@ -62,6 +65,7 @@ World_Fight :: struct {
 	state:                   Fight_State,
 	assets:                  ^Assets,
 	projectile_interpolator: f32,
+	win_jingle_time:         f32,
 }
 
 Fight_State :: enum {
@@ -73,6 +77,7 @@ Fight_State :: enum {
 	Enemy_Attacking_Melee,
 	Enemy_Attacking_Range,
 	Enemy_Taking_Hit,
+	Win_Jingle,
 }
 
 World_Fight_Player :: struct {
@@ -311,8 +316,8 @@ player_update :: proc(player: ^World_Fight_Player, queue: ^Event_Queue) {
 world_fight_update :: proc(f: ^World_Fight, queue: ^Event_Queue) {
 	player_update(&f.player, queue)
 	enemy_update(&f.enemy, queue)
-	if f.enemy.hp <= 0 {
-		event_dispatch(queue, Event_Fight_Win{})
+	if f.state != .Win_Jingle && f.enemy.hp <= 0 {
+		event_dispatch(queue, Event_Fight_Enemy_Dead{})
 	}
 	if f.player.hp <= 0 {
 		event_dispatch(queue, Event_Lose{})
@@ -345,6 +350,7 @@ world_fight_update :: proc(f: ^World_Fight, queue: ^Event_Queue) {
 		case .Not_Yed_Tried:
 			fallthrough
 		case .Unsuccessfull:
+			event_dispatch(queue, Event_Fight_Player_Get_Hurt{})
 			rl.TraceLog(.INFO, "Player takes damage")
 			if f.player.shield > 0 {
 				f.player.shield -= 1
@@ -352,9 +358,9 @@ world_fight_update :: proc(f: ^World_Fight, queue: ^Event_Queue) {
 				f.player.hp -= 1
 			}
 		case .Successfull_Parry:
-			rl.TraceLog(.INFO, "Player parried successfully")
+			event_dispatch(queue, Event_Fight_Parry_Success{})
 		case .Successfull_Deflect:
-			rl.TraceLog(.INFO, "Player deflected successfully")
+			event_dispatch(queue, Event_Fight_Deflect_Success{})
 		}
 		event_dispatch(queue, Event_Fight_Player_Turn{})
 
@@ -392,6 +398,11 @@ world_fight_update :: proc(f: ^World_Fight, queue: ^Event_Queue) {
 		case Pending_Damage_Ranged:
 			f.enemy.hp -= int(cast(f32)pen.damage * (1 - f.enemy.range_damage_reduction))
 			event_dispatch(queue, Event_Fight_Enemy_Turn{})
+		}
+	case .Win_Jingle:
+		f.win_jingle_time += rl.GetFrameTime()
+		if f.win_jingle_time > WIN_JINGLE_TIME {
+			event_dispatch(queue, Event_Fight_Win{})
 		}
 	}
 }
@@ -449,6 +460,7 @@ fight_panel_ui :: proc(f: ^World_Fight, queue: ^Event_Queue) {
 
 		ui_player_defending(f, queue)
 	case .Enemy_Taking_Hit:
+	case .Win_Jingle:
 	// nothing
 	}
 
@@ -464,7 +476,7 @@ fight_panel_ui :: proc(f: ^World_Fight, queue: ^Event_Queue) {
 			},
 			"Press to win",
 		) {
-			event_dispatch(queue, Event_Fight_Win{})
+			event_dispatch(queue, Event_Fight_Enemy_Dead{})
 		}
 	}
 }
@@ -517,6 +529,8 @@ world_fight_handle_event :: proc(f: ^World_Fight, event: Event) {
 		}
 	case Event_Fight_Enemy_Take_Hit:
 		f.state = .Enemy_Taking_Hit
+	case Event_Fight_Enemy_Dead:
+		f.state = .Win_Jingle
 	}
 
 }

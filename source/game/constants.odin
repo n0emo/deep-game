@@ -1,3 +1,3 @@
 package game
 
-ENABLE_DEBUG :: true
+ENABLE_DEBUG :: false

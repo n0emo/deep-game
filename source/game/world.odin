@@ -1,8 +1,6 @@
 package game
 
 import "core:math/rand"
-import rl "vendor:raylib"
-
 
 World :: struct {
 	state:           World_State,
@@ -42,7 +40,7 @@ world_make :: proc(assets: ^Assets) -> ^World {
 	tilemaps := [2]Tile_Map{tilemap_1, tilemap_2}
 
 	player_stats := Player_Stats {
-		hp           = 10,
+		hp           = 1,
 		shield       = 3,
 		melee_damage = 3,
 		range_damage = 3,
@@ -121,7 +119,6 @@ world_handle_event :: proc(w: ^World, event: Event) {
 		w.fight = world_fight_make(w.assets, e.hp, e.enemy_name, &w.player_stats)
 	case Event_Fight_Win:
 		rng := rand.int_max(2)
-		rl.TraceLog(.INFO, "%d", rng)
 		switch rng {
 		case 0:
 			w.fight.player.melee_damage += 2

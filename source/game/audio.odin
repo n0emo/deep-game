@@ -49,6 +49,7 @@ audio_system_handle_event :: proc(a: ^Audio_System, event: Event) {
 	case Event_Fight_Begin:
 		switch_music(a, &a.assets.music_battle)
 	case Event_Fight_Win:
+		play_sound(a, a.assets.fx_extra_shield)
 		switch_music(a, &a.assets.music_overworld)
 	case Event_Change_Audio_Volume:
 		a.master_volume = e.master_volume
@@ -60,6 +61,33 @@ audio_system_handle_event :: proc(a: ^Audio_System, event: Event) {
 		play_sound(a, a.assets.fx_steps)
 	case Event_Fight_Enemy_Warn:
 		play_sound(a, a.assets.fx_warning)
+	case Event_Fight_Player_Attack_Melee:
+		play_sound(a, a.assets.fx_action)
+	case Event_Fight_Player_Attack_Range:
+		play_sound(a, a.assets.fx_action)
+		play_sound(a, a.assets.fx_gunshot)
+	case Event_Fight_Player_Parry:
+		play_sound(a, a.assets.fx_action)
+	case Event_Fight_Player_Deflect:
+		play_sound(a, a.assets.fx_action)
+	case Event_Fight_Enemy_Take_Hit:
+		play_sound(a, a.assets.fx_damage)
+		play_sound(a, a.assets.fx_gauntlet)
+	case Event_Fight_Enemy_Attack_Ranged:
+		play_sound(a, a.assets.fx_projectile)
+	case Event_Fight_Player_Get_Hurt:
+		play_sound(a, a.assets.fx_damage)
+	case Event_Fight_Parry_Success:
+		play_sound(a, a.assets.fx_parry)
+	case Event_Fight_Deflect_Success:
+		play_sound(a, a.assets.fx_deflect)
+	case Event_Fight_Enemy_Dead:
+		// play_sound(a, a.assets.fx_death)
+		switch_music(a, &a.assets.jingle_win, loop = false)
+	case Event_End_Transitioning:
+		play_sound(a, a.assets.fx_fall)
+	case Event_Lose:
+		switch_music(a, &a.assets.jingle_dead, loop = false)
 	}
 }
 

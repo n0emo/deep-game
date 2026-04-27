@@ -76,6 +76,14 @@ Event_Fight_Random_Encounter :: struct {}
 
 Event_Fight_Enemy_Take_Hit :: struct {}
 
+Event_Fight_Deflect_Success :: struct {}
+
+Event_Fight_Parry_Success :: struct {}
+
+Event_Fight_Player_Get_Hurt :: struct {}
+
+Event_Fight_Enemy_Dead :: struct {}
+
 Event :: union {
 	Event_Start_Game,
 	Event_Exit,
@@ -106,6 +114,10 @@ Event :: union {
 	Event_Fight_Enemy_Attack_Ranged,
 	Event_Fight_Random_Encounter,
 	Event_Fight_Enemy_Take_Hit,
+	Event_Fight_Parry_Success,
+	Event_Fight_Deflect_Success,
+	Event_Fight_Player_Get_Hurt,
+	Event_Fight_Enemy_Dead,
 }
 
 Event_Queue :: struct {
