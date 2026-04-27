@@ -59,7 +59,9 @@ Assets_Sprites :: struct {
 	icon_settings:        Sprite,
 	icon_shield:          Sprite,
 	icon_start_game:      Sprite,
-	main_menu:            rl.Texture2D,
+	bg_main_menu:         rl.Texture2D,
+	bg_dead:              rl.Texture2D,
+	bg_win:               rl.Texture2D,
 	fight_background:     rl.Texture2D,
 	player_transitioning: rl.Texture2D,
 }
@@ -117,7 +119,9 @@ assets_sprites_load :: proc(sprites_dir: string) -> Assets_Sprites {
 		player = load_atlas(sprites_dir, "player.json"),
 		fight_entity = load_atlas(sprites_dir, "fight-entity.json"),
 		icons = load_atlas(sprites_dir, "icons.json"),
-		main_menu = load_sprite(sprites_dir, "main_menu.png"),
+		bg_main_menu = load_sprite(sprites_dir, "background-main-menu.png"),
+		bg_dead = load_sprite(sprites_dir, "background-dead.png"),
+		bg_win = load_sprite(sprites_dir, "background-win.png"),
 		fight_background = load_sprite(sprites_dir, "fight-background.png"),
 		player_transitioning = load_sprite(sprites_dir, "player-main-menu.png"),
 	}
@@ -127,7 +131,9 @@ assets_sprites_load :: proc(sprites_dir: string) -> Assets_Sprites {
 assets_sprites_unload :: proc(sprites: ^Assets_Sprites) {
 	atlas.unload(&sprites.player)
 	atlas.unload(&sprites.fight_entity)
-	rl.UnloadTexture(sprites.main_menu)
+	rl.UnloadTexture(sprites.bg_main_menu)
+	rl.UnloadTexture(sprites.bg_dead)
+	rl.UnloadTexture(sprites.bg_win)
 	rl.UnloadTexture(sprites.fight_background)
 	rl.UnloadTexture(sprites.player_transitioning)
 }

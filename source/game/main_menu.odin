@@ -36,7 +36,7 @@ Main_Menu_Screen :: enum {
 
 main_menu_make :: proc(assets: ^Assets) -> Main_Menu {
 	return {
-		bg_texture = assets.sprites.main_menu,
+		bg_texture = assets.sprites.bg_main_menu,
 		settings = Main_Menu_Settings {
 			master_volume = DEFAULT_MASTER_VOLUME * 100,
 			music_volume = DEFAULT_MUSIC_VOLUME * 100,
@@ -47,7 +47,8 @@ main_menu_make :: proc(assets: ^Assets) -> Main_Menu {
 }
 
 main_menu_ui :: proc(m: ^Main_Menu, queue: ^Event_Queue) {
-	menu_bg(m)
+	rl.ClearBackground(rl.GetColor(0x231d29ff))
+	background_texture_centered(m.bg_texture)
 
 	old_size := rl.GuiGetStyle(.DEFAULT, i32(rl.GuiDefaultProperty.TEXT_SIZE))
 	rl.GuiSetStyle(.DEFAULT, i32(rl.GuiDefaultProperty.TEXT_SIZE), TEXT_SIZE)

@@ -70,6 +70,8 @@ Event_Fight_Enemy_Attack_Ranged :: struct {}
 
 Event_Lose :: struct {}
 
+Event_Win :: struct {}
+
 Event_Fight_Random_Encounter :: struct {}
 
 Event_Fight_Enemy_Take_Hit :: struct {}
@@ -87,6 +89,7 @@ Event :: union {
 	Event_Fight_Encounter,
 	Event_Fight_Begin,
 	Event_Lose,
+	Event_Win,
 	Event_Fight_Win,
 	Event_Fight_Player_Attack_Melee,
 	Event_Fight_Player_Attack_Range,

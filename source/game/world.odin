@@ -50,7 +50,7 @@ world_destroy :: proc(w: ^World) {
 
 world_update :: proc(w: ^World, queue: ^Event_Queue) {
 	if w.current_tilemap == len(w.tilemaps) {
-		event_dispatch(queue, Event_Menu{})
+		event_dispatch(queue, Event_Win{})
 		return
 	}
 

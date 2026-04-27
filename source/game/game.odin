@@ -10,6 +10,8 @@ Game_Memory :: struct {
 	state:       Game_State,
 	world:       ^World,
 	main_menu:   Main_Menu,
+	dead_screen: Dead_Screen,
+	win_screen:  Win_Screen,
 	event_queue: Event_Queue,
 	input:       Input,
 	audio:       Audio_System,
@@ -19,6 +21,8 @@ Game_State :: enum {
 	Exit,
 	Menu,
 	Game,
+	Dead,
+	Win,
 }
 
 game_make :: proc() -> ^Game_Memory {
@@ -29,6 +33,8 @@ game_make :: proc() -> ^Game_Memory {
 	}
 	assets := assets_load()
 	main_menu := main_menu_make(assets)
+	dead_screen := dead_screen_make(assets)
+	win_screen := win_screen_make(assets)
 	input := input_make()
 	audio := audio_system_make(assets)
 
@@ -36,6 +42,8 @@ game_make :: proc() -> ^Game_Memory {
 	g^ = Game_Memory {
 		assets      = assets,
 		main_menu   = main_menu,
+		dead_screen = dead_screen,
+		win_screen  = win_screen,
 		state       = .Menu,
 		event_queue = event_queue,
 		input       = input,
@@ -72,6 +80,8 @@ game_update :: proc(g: ^Game_Memory) {
 	case .Menu:
 	case .Game:
 		world_update(g.world, &g.event_queue)
+	case .Dead:
+	case .Win:
 	}
 }
 
@@ -87,8 +97,9 @@ game_handle_event :: proc(g: ^Game_Memory, event: Event) {
 	case Event_Menu:
 		g.state = .Menu
 	case Event_Lose:
-		// Implement Game Over screen
-		g.state = .Menu
+		g.state = .Dead
+	case Event_Win:
+		g.state = .Win
 	}
 
 	switch g.state {
@@ -97,6 +108,8 @@ game_handle_event :: proc(g: ^Game_Memory, event: Event) {
 		world_handle_event(g.world, event)
 	case .Menu:
 		main_menu_handle_event(&g.main_menu, event)
+	case .Dead:
+	case .Win:
 	}
 }
 
@@ -108,6 +121,8 @@ game_draw :: proc(g: ^Game_Memory) {
 	case .Menu:
 	case .Game:
 		world_draw(g.world)
+	case .Dead:
+	case .Win:
 	}
 
 	switch g.state {
@@ -116,6 +131,10 @@ game_draw :: proc(g: ^Game_Memory) {
 		main_menu_ui(&g.main_menu, &g.event_queue)
 	case .Game:
 		world_ui(g.world, &g.event_queue)
+	case .Dead:
+		dead_screen_ui(&g.dead_screen, &g.event_queue)
+	case .Win:
+		win_screen_ui(&g.win_screen, &g.event_queue)
 	}
 
 	rl.DrawFPS(10, 10)

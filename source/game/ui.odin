@@ -45,3 +45,32 @@ slider_centered :: proc(text: cstring, value: ^f32, size: rl.Vector2, offset: rl
 
 	return value == 1
 }
+
+background_texture_centered :: proc(texture: rl.Texture, align_top: bool = false) {
+	// TODO: this aspect handling may be incorect but i have square picture and could not test
+	aspect := f32(texture.width) / f32(texture.height)
+	x := f32(0)
+	y := f32(0)
+	width := f32(rl.GetScreenWidth())
+	height := f32(rl.GetScreenHeight())
+	if width > height {
+		width = height * aspect
+		x = (f32(rl.GetScreenWidth()) - width) * 0.5
+	} else {
+		height = width * aspect
+		y = (f32(rl.GetScreenHeight()) - height) * 0.5
+	}
+
+	if align_top {
+		y = 0
+	}
+
+	rl.DrawTexturePro(
+		texture,
+		{x = 0, y = 0, width = f32(texture.width), height = f32(texture.height)},
+		{x = x, y = y, width = width, height = height},
+		0,
+		0,
+		rl.WHITE,
+	)
+}

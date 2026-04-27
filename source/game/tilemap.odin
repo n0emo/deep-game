@@ -44,7 +44,9 @@ tilemap_height :: proc(m: ^Tile_Map) -> u32 {
 tilemap_draw :: proc(m: ^Tile_Map, offset: rl.Vector2) {
 	draw_tile_layer(m, m.base_layer, offset)
 	draw_tile_layer(m, m.prop_layer, offset)
-	draw_objects(m, offset)
+	when ENABLE_DEBUG {
+		draw_objects(m, offset)
+	}
 }
 
 tilemap_tile_passable :: proc(m: ^Tile_Map, tile: [2]i32) -> bool {
