@@ -9,6 +9,7 @@ import rl "vendor:raylib"
 
 Assets :: struct {
 	sprites:         Assets_Sprites,
+	animations:      Assets_Animations,
 	audio:           Assets_Audio,
 	tiled_loader:    ^tiled.Loader,
 	tilemap_level_1: tiled.Tilemap,
@@ -18,6 +19,7 @@ Assets :: struct {
 assets_load :: proc(assets_dir: string = "assets") -> ^Assets {
 	assets := new(Assets)
 	assets.sprites = assets_sprites_load(fmt.tprintf("%s/%s", assets_dir, "sprites"))
+	assets.animations, _ = assets_animations_from_sprites(assets.sprites)
 	assets.audio = assets_audio_load(slashpath.join({assets_dir, "audio"}, context.temp_allocator))
 	assets.tiled_loader = tiled.loader_make()
 
@@ -43,13 +45,47 @@ assets_unload :: proc(assets: ^Assets) {
 
 Assets_Sprites :: struct {
 	player:               atlas.Atlas,
-	grass:                rl.Texture2D,
-	main_menu:            rl.Texture2D,
-	heart:                rl.Texture2D,
-	shield:               rl.Texture2D,
-	fight_background:     rl.Texture2D,
 	fight_entity:         atlas.Atlas,
+	icons:                atlas.Atlas,
+	icon_arrow_down:      Sprite,
+	icon_attack_mellee:   Sprite,
+	icon_attack_range:    Sprite,
+	icon_damage:          Sprite,
+	icon_exclamation:     Sprite,
+	icon_exit:            Sprite,
+	icon_heart:           Sprite,
+	icon_parry:           Sprite,
+	icon_retry:           Sprite,
+	icon_settings:        Sprite,
+	icon_shield:          Sprite,
+	icon_start_game:      Sprite,
+	main_menu:            rl.Texture2D,
+	fight_background:     rl.Texture2D,
 	player_transitioning: rl.Texture2D,
+}
+
+Assets_Animations :: struct {
+	player_overworld_idle:            [Direction]Animation,
+	player_overworld_moving:          [Direction]Animation,
+	player_fight_idle:                Animation,
+	player_fight_ranged_attack:       Animation,
+	player_fight_melee_attack:        Animation,
+	enemy_melee_idle:                 Animation,
+	enemy_melee_melee_attack:         Animation,
+	enemy_ranger_idle:                Animation,
+	enemy_ranger_ranged_attack:       Animation,
+	enemy_gear_idle:                  Animation,
+	enemy_gear_melee_attack:          Animation,
+	enemy_turret_idle:                Animation,
+	enemy_turret_ranged_attack:       Animation,
+	enemy_drone_idle:                 Animation,
+	enemy_drone_ranged_attack:        Animation,
+	enemy_fanatic_idle:               Animation,
+	enemy_fanatic_melee_attack:       Animation,
+	enemy_fanatic_ranged_attack:      Animation,
+	enemy_lastguardian_idle:          Animation,
+	enemy_lastguardian_melee_attack:  Animation,
+	enemy_lastguardian_ranged_attack: Animation,
 }
 
 Assets_Audio :: struct {
@@ -79,12 +115,10 @@ Assets_Audio :: struct {
 assets_sprites_load :: proc(sprites_dir: string) -> Assets_Sprites {
 	return Assets_Sprites {
 		player = load_atlas(sprites_dir, "player.json"),
-		grass = load_sprite(sprites_dir, "grass.png"),
-		main_menu = load_sprite(sprites_dir, "main_menu.png"),
-		heart = load_sprite(sprites_dir, "heart.png"),
-		shield = load_sprite(sprites_dir, "shield.png"),
-		fight_background = load_sprite(sprites_dir, "fight-background.png"),
 		fight_entity = load_atlas(sprites_dir, "fight-entity.json"),
+		icons = load_atlas(sprites_dir, "icons.json"),
+		main_menu = load_sprite(sprites_dir, "main_menu.png"),
+		fight_background = load_sprite(sprites_dir, "fight-background.png"),
 		player_transitioning = load_sprite(sprites_dir, "player-main-menu.png"),
 	}
 }
@@ -93,12 +127,261 @@ assets_sprites_load :: proc(sprites_dir: string) -> Assets_Sprites {
 assets_sprites_unload :: proc(sprites: ^Assets_Sprites) {
 	atlas.unload(&sprites.player)
 	atlas.unload(&sprites.fight_entity)
-	rl.UnloadTexture(sprites.grass)
 	rl.UnloadTexture(sprites.main_menu)
-	rl.UnloadTexture(sprites.heart)
-	rl.UnloadTexture(sprites.shield)
 	rl.UnloadTexture(sprites.fight_background)
 	rl.UnloadTexture(sprites.player_transitioning)
+}
+
+@(private = "file")
+assets_animations_from_sprites :: proc(
+	sprites: Assets_Sprites,
+) -> (
+	animations: Assets_Animations,
+	ok: bool,
+) {
+	animations.player_overworld_idle = [Direction]Animation {
+		.Up    = animation_make(
+			sprites.player.texture,
+			{
+				animation_frame_from_atlas(sprites.player, "player-idle-back-0"),
+				animation_frame_from_atlas(sprites.player, "player-idle-back-1"),
+				animation_frame_from_atlas(sprites.player, "player-idle-back-2"),
+				animation_frame_from_atlas(sprites.player, "player-idle-back-3"),
+			},
+		),
+		.Down  = animation_make(
+			sprites.player.texture,
+			{
+				animation_frame_from_atlas(sprites.player, "player-idle-front-0"),
+				animation_frame_from_atlas(sprites.player, "player-idle-front-1"),
+				animation_frame_from_atlas(sprites.player, "player-idle-front-2"),
+				animation_frame_from_atlas(sprites.player, "player-idle-front-3"),
+			},
+		),
+		.Left  = animation_make(
+			sprites.player.texture,
+			{
+				animation_frame_from_atlas(sprites.player, "player-idle-left-0"),
+				animation_frame_from_atlas(sprites.player, "player-idle-left-1"),
+				animation_frame_from_atlas(sprites.player, "player-idle-left-2"),
+				animation_frame_from_atlas(sprites.player, "player-idle-left-3"),
+			},
+		),
+		.Right = animation_make(
+			sprites.player.texture,
+			{
+				animation_frame_from_atlas(sprites.player, "player-idle-right-0"),
+				animation_frame_from_atlas(sprites.player, "player-idle-right-1"),
+				animation_frame_from_atlas(sprites.player, "player-idle-right-2"),
+				animation_frame_from_atlas(sprites.player, "player-idle-right-3"),
+			},
+		),
+	}
+
+	animations.player_overworld_moving = [Direction]Animation {
+		.Up    = animation_make(
+			sprites.player.texture,
+			{
+				animation_frame_from_atlas(sprites.player, "player-move-back-0"),
+				animation_frame_from_atlas(sprites.player, "player-move-back-1"),
+				animation_frame_from_atlas(sprites.player, "player-move-back-2"),
+				animation_frame_from_atlas(sprites.player, "player-move-back-3"),
+			},
+		),
+		.Down  = animation_make(
+			sprites.player.texture,
+			{
+				animation_frame_from_atlas(sprites.player, "player-move-front-0"),
+				animation_frame_from_atlas(sprites.player, "player-move-front-1"),
+				animation_frame_from_atlas(sprites.player, "player-move-front-2"),
+				animation_frame_from_atlas(sprites.player, "player-move-front-3"),
+			},
+		),
+		.Left  = animation_make(
+			sprites.player.texture,
+			{
+				animation_frame_from_atlas(sprites.player, "player-move-left-0"),
+				animation_frame_from_atlas(sprites.player, "player-move-left-1"),
+				animation_frame_from_atlas(sprites.player, "player-move-left-2"),
+				animation_frame_from_atlas(sprites.player, "player-move-left-3"),
+			},
+		),
+		.Right = animation_make(
+			sprites.player.texture,
+			{
+				animation_frame_from_atlas(sprites.player, "player-move-right-0"),
+				animation_frame_from_atlas(sprites.player, "player-move-right-1"),
+				animation_frame_from_atlas(sprites.player, "player-move-right-2"),
+				animation_frame_from_atlas(sprites.player, "player-move-right-3"),
+			},
+		),
+	}
+
+	animations.player_fight_idle = animation_make(
+		sprites.fight_entity.texture,
+		{
+			animation_frame_from_atlas(sprites.fight_entity, "player-fight-idle-0"),
+			animation_frame_from_atlas(sprites.fight_entity, "player-fight-idle-1"),
+		},
+	)
+
+	animations.player_fight_ranged_attack = animation_make(
+		sprites.fight_entity.texture,
+		{
+			animation_frame_from_atlas(sprites.fight_entity, "player-fight-range-attack-0"),
+			animation_frame_from_atlas(sprites.fight_entity, "player-fight-range-attack-1"),
+		},
+	)
+
+	animations.player_fight_melee_attack = animation_make(
+		sprites.fight_entity.texture,
+		{
+			animation_frame_from_atlas(sprites.fight_entity, "player-fight-melee-attack-0"),
+			animation_frame_from_atlas(sprites.fight_entity, "player-fight-melee-attack-1"),
+		},
+	)
+
+	animations.enemy_melee_idle = animation_make(
+		sprites.fight_entity.texture,
+		{
+			animation_frame_from_atlas(sprites.fight_entity, "enemy-fight-melee-idle-0"),
+			animation_frame_from_atlas(sprites.fight_entity, "enemy-fight-melee-idle-1"),
+		},
+	)
+
+	animations.enemy_melee_melee_attack = animation_make(
+		sprites.fight_entity.texture,
+		{
+			animation_frame_from_atlas(sprites.fight_entity, "enemy-fight-melee-attack-0"),
+			animation_frame_from_atlas(sprites.fight_entity, "enemy-fight-melee-attack-1"),
+		},
+	)
+
+	animations.enemy_ranger_idle = animation_make(
+		sprites.fight_entity.texture,
+		{
+			animation_frame_from_atlas(sprites.fight_entity, "enemy-fight-ranger-idle-0"),
+			animation_frame_from_atlas(sprites.fight_entity, "enemy-fight-ranger-idle-1"),
+		},
+	)
+
+	animations.enemy_ranger_ranged_attack = animation_make(
+		sprites.fight_entity.texture,
+		{
+			animation_frame_from_atlas(sprites.fight_entity, "enemy-fight-ranger-attack-0"),
+			animation_frame_from_atlas(sprites.fight_entity, "enemy-fight-ranger-attack-1"),
+		},
+	)
+
+	animations.enemy_gear_idle = animation_make(
+		sprites.fight_entity.texture,
+		{
+			animation_frame_from_atlas(sprites.fight_entity, "enemy-fight-gear-idle-0"),
+			animation_frame_from_atlas(sprites.fight_entity, "enemy-fight-gear-idle-1"),
+		},
+	)
+
+	animations.enemy_gear_melee_attack = animation_make(
+		sprites.fight_entity.texture,
+		{
+			animation_frame_from_atlas(sprites.fight_entity, "enemy-fight-gear-attack-0"),
+			animation_frame_from_atlas(sprites.fight_entity, "enemy-fight-gear-attack-1"),
+		},
+	)
+
+	animations.enemy_turret_idle = animation_make(
+		sprites.fight_entity.texture,
+		{
+			animation_frame_from_atlas(sprites.fight_entity, "enemy-fight-turret-idle-0"),
+			animation_frame_from_atlas(sprites.fight_entity, "enemy-fight-turret-idle-1"),
+		},
+	)
+
+	animations.enemy_turret_ranged_attack = animation_make(
+		sprites.fight_entity.texture,
+		{
+			animation_frame_from_atlas(sprites.fight_entity, "enemy-fight-turret-attack-0"),
+			animation_frame_from_atlas(sprites.fight_entity, "enemy-fight-turret-attack-1"),
+		},
+	)
+
+	animations.enemy_drone_idle = animation_make(
+		sprites.fight_entity.texture,
+		{
+			animation_frame_from_atlas(sprites.fight_entity, "enemy-fight-drone-idle-0"),
+			animation_frame_from_atlas(sprites.fight_entity, "enemy-fight-drone-idle-1"),
+		},
+	)
+
+	animations.enemy_drone_ranged_attack = animation_make(
+		sprites.fight_entity.texture,
+		{
+			animation_frame_from_atlas(sprites.fight_entity, "enemy-fight-drone-attack-0"),
+			animation_frame_from_atlas(sprites.fight_entity, "enemy-fight-drone-attack-1"),
+		},
+	)
+
+	animations.enemy_fanatic_idle = animation_make(
+		sprites.fight_entity.texture,
+		{
+			animation_frame_from_atlas(sprites.fight_entity, "enemy-fight-fanatic-idle-0"),
+			animation_frame_from_atlas(sprites.fight_entity, "enemy-fight-fanatic-idle-1"),
+		},
+	)
+
+	animations.enemy_fanatic_ranged_attack = animation_make(
+		sprites.fight_entity.texture,
+		{
+			animation_frame_from_atlas(sprites.fight_entity, "enemy-fight-fanatic-melee-attack-0"),
+			animation_frame_from_atlas(sprites.fight_entity, "enemy-fight-fanatic-melee-attack-1"),
+		},
+	)
+
+	animations.enemy_fanatic_melee_attack = animation_make(
+		sprites.fight_entity.texture,
+		{
+			animation_frame_from_atlas(sprites.fight_entity, "enemy-fight-fanatic-range-attack-0"),
+			animation_frame_from_atlas(sprites.fight_entity, "enemy-fight-fanatic-range-attack-1"),
+		},
+	)
+
+	animations.enemy_lastguardian_idle = animation_make(
+		sprites.fight_entity.texture,
+		{
+			animation_frame_from_atlas(sprites.fight_entity, "enemy-fight-last-guardian-idle-0"),
+			animation_frame_from_atlas(sprites.fight_entity, "enemy-fight-last-guardian-idle-1"),
+		},
+	)
+
+	animations.enemy_lastguardian_ranged_attack = animation_make(
+		sprites.fight_entity.texture,
+		{
+			animation_frame_from_atlas(
+				sprites.fight_entity,
+				"enemy-fight-last-guardian-melee-attack-0",
+			),
+			animation_frame_from_atlas(
+				sprites.fight_entity,
+				"enemy-fight-last-guardian-melee-attack-1",
+			),
+		},
+	)
+
+	animations.enemy_lastguardian_melee_attack = animation_make(
+		sprites.fight_entity.texture,
+		{
+			animation_frame_from_atlas(
+				sprites.fight_entity,
+				"enemy-fight-last-guardian-range-attack-0",
+			),
+			animation_frame_from_atlas(
+				sprites.fight_entity,
+				"enemy-fight-last-guardian-range-attack-1",
+			),
+		},
+	)
+
+	return
 }
 
 @(private = "file")
@@ -118,6 +401,7 @@ load_atlas :: proc(sprites_dir: string, name: string) -> atlas.Atlas {
 	rl.SetTextureFilter(atlas.texture, .POINT)
 	return atlas
 }
+
 
 @(private = "file")
 assets_audio_load :: proc(audio_dir: string) -> Assets_Audio {

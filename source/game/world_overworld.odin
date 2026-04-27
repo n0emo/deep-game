@@ -29,7 +29,7 @@ World_Overworld :: struct {
 
 world_overworld_make :: proc(assets: ^Assets, tilemap: ^Tile_Map, scale: int) -> World_Overworld {
 	player_tile := [2]i32{i32(tilemap.spawnpoint.x), i32(tilemap.spawnpoint.y)} / TILE_SIZE
-	player := player_make(&assets.sprites.player, player_tile)
+	player := player_make(assets.sprites.player, player_tile)
 	camera := rl.Camera2D{}
 	pool := [dynamic; RANDOM_ENEMIES_COUNT]Object {
 		Object{id = -1, properties = Object_Enemy{hp = 10 * scale, enemy_name = "melee"}},
@@ -144,7 +144,7 @@ Player_Moving :: struct {
 }
 
 @(private = "file")
-player_make :: proc(atlas: ^atlas.Atlas, tile: [2]i32) -> Overworld_Player {
+player_make :: proc(atlas: atlas.Atlas, tile: [2]i32) -> Overworld_Player {
 	animations_idle := [Direction]Animation {
 		.Up    = animation_make(
 			atlas.texture,

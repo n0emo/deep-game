@@ -7,10 +7,13 @@ import "core:math/rand"
 import rl "vendor:raylib"
 
 @(private = "file")
+SPRITE_SCALE :: 4
+
+@(private = "file")
 UI_HEIGHT :: 250
 
 @(private = "file")
-FIGHT_LINE :: UI_HEIGHT + 150
+FIGHT_LINE :: UI_HEIGHT + 200
 
 @(private = "file")
 BUTTON_SIZE :: rl.Vector2{300, 50}
@@ -116,7 +119,7 @@ Turn :: enum {
 }
 
 world_fight_make :: proc(assets: ^Assets, enemy_hp: int, enemy_name: string) -> World_Fight {
-	player := player_make(&assets.sprites.player)
+	player := player_make(assets)
 	enemy := enemy_make(
 		&assets.sprites.player,
 		enemy_hp,
@@ -135,35 +138,6 @@ enemy_make :: proc(
 	enemy_name: string,
 	pos: rl.Vector2,
 ) -> World_Fight_Enemy {
-	animation_idle := animation_make(
-		atlas.texture,
-		{
-			animation_frame_from_atlas(atlas, "player-idle-right-0"),
-			animation_frame_from_atlas(atlas, "player-idle-right-1"),
-			animation_frame_from_atlas(atlas, "player-idle-right-2"),
-			animation_frame_from_atlas(atlas, "player-idle-right-3"),
-		},
-	)
-	animation_attack_melee := animation_make(
-		atlas.texture,
-		{
-			animation_frame_from_atlas(atlas, "player-idle-left-0"),
-			animation_frame_from_atlas(atlas, "player-idle-left-1"),
-			animation_frame_from_atlas(atlas, "player-idle-left-2"),
-			animation_frame_from_atlas(atlas, "player-idle-left-3"),
-		},
-		loop = false,
-	)
-	animation_attack_range := animation_make(
-		atlas.texture,
-		{
-			animation_frame_from_atlas(atlas, "player-idle-down-0"),
-			animation_frame_from_atlas(atlas, "player-idle-down-1"),
-			animation_frame_from_atlas(atlas, "player-idle-down-2"),
-			animation_frame_from_atlas(atlas, "player-idle-down-3"),
-		},
-		loop = false,
-	)
 	return World_Fight_Enemy {
 		hp = enemy_hp,
 		max_hp = enemy_hp,
@@ -174,9 +148,6 @@ enemy_make :: proc(
 		melee_damage_reduction = 0.2,
 		range_damage_reduction = 0.1,
 		animation_current = nil,
-		animation_attack_melee = animation_attack_melee,
-		animation_attack_range = animation_attack_range,
-		animation_idle = animation_idle,
 	}
 }
 
@@ -193,7 +164,7 @@ enemy_draw :: proc(enemy: ^World_Fight_Enemy) {
 				f32(rl.GetScreenHeight()) - FIGHT_LINE,
 			},
 			centered = true,
-			scale = 6,
+			scale = SPRITE_SCALE,
 		)
 	}
 }
@@ -211,46 +182,16 @@ enemy_update :: proc(enemy: ^World_Fight_Enemy, queue: ^Event_Queue) {
 }
 
 @(private = "file")
-player_make :: proc(atlas: ^atlas.Atlas) -> World_Fight_Player {
-	animation_idle := animation_make(
-		atlas.texture,
-		{
-			animation_frame_from_atlas(atlas, "player-idle-right-0"),
-			animation_frame_from_atlas(atlas, "player-idle-right-1"),
-			animation_frame_from_atlas(atlas, "player-idle-right-2"),
-			animation_frame_from_atlas(atlas, "player-idle-right-3"),
-		},
-	)
-	animation_attack_melee := animation_make(
-		atlas.texture,
-		{
-			animation_frame_from_atlas(atlas, "player-idle-left-0"),
-			animation_frame_from_atlas(atlas, "player-idle-left-1"),
-			animation_frame_from_atlas(atlas, "player-idle-left-2"),
-			animation_frame_from_atlas(atlas, "player-idle-left-3"),
-		},
-		loop = true,
-	)
-	animation_attack_range := animation_make(
-		atlas.texture,
-		{
-			animation_frame_from_atlas(atlas, "player-idle-down-0"),
-			animation_frame_from_atlas(atlas, "player-idle-down-1"),
-			animation_frame_from_atlas(atlas, "player-idle-down-2"),
-			animation_frame_from_atlas(atlas, "player-idle-down-3"),
-		},
-		loop = false,
-	)
-
+player_make :: proc(assets: ^Assets) -> World_Fight_Player {
 	player := World_Fight_Player {
 		hp                     = 1000,
 		shield                 = 3,
 		melee_damage           = 2,
 		range_damage           = 1,
 		animation_current      = nil,
-		animation_idle         = animation_idle,
-		animation_attack_melee = animation_attack_melee,
-		animation_attack_range = animation_attack_range,
+		animation_idle         = assets.animations.player_fight_idle,
+		animation_attack_melee = assets.animations.player_fight_melee_attack,
+		animation_attack_range = assets.animations.player_fight_ranged_attack,
 	}
 	return player
 }
@@ -268,7 +209,7 @@ player_draw :: proc(player: ^World_Fight_Player) {
 				f32(rl.GetScreenHeight()) - FIGHT_LINE,
 			},
 			centered = true,
-			scale = 6,
+			scale = SPRITE_SCALE,
 		)
 	}
 }
@@ -278,6 +219,7 @@ player_update :: proc(player: ^World_Fight_Player, queue: ^Event_Queue) {
 	if player.animation_current == nil {
 		player.animation_current = &player.animation_idle
 	}
+
 	if player.animation_current != &player.animation_idle &&
 	   player.animation_current.index >= len(player.animation_current.frames) - 1 {
 		player.animation_current = &player.animation_idle
@@ -532,7 +474,7 @@ draw_background :: proc(texture: rl.Texture2D) {
 		{width = f32(texture.width), height = f32(texture.height)},
 		{
 			x = -50,
-			y = f32(rl.GetScreenHeight()) - FIGHT_LINE - height * 0.8,
+			y = f32(rl.GetScreenHeight()) - FIGHT_LINE - height * 0.7,
 			width = width,
 			height = height,
 		},

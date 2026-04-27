@@ -1,15 +1,14 @@
 package game
 
 import atlas "../atlas"
-import "core:slice"
+import "core:fmt"
 import rl "vendor:raylib"
 
 Animation :: struct {
 	texture: rl.Texture2D,
 	time:    f32,
 	index:   int,
-	// TODO: [dynamic; 8]Animation_Frame
-	frames:  []Animation_Frame,
+	frames:  [dynamic; 8]Animation_Frame,
 	loop:    bool,
 }
 
@@ -18,15 +17,23 @@ animation_make :: proc(
 	frames: []Animation_Frame,
 	loop: bool = true,
 ) -> Animation {
-	frames_clone := slice.clone(frames)
-	return Animation{texture = texture, frames = frames_clone, time = 0, index = 0, loop = loop}
-}
-
-animation_destroy :: proc(animation: ^Animation) {
-	delete(animation.frames)
+	animation := Animation {
+		texture = texture,
+		time    = 0,
+		index   = 0,
+		loop    = loop,
+	}
+	for frame in frames {
+		append(&animation.frames, frame)
+	}
+	return animation
 }
 
 animation_update :: proc(animation: ^Animation) {
+	if len(animation.frames) <= 1 {
+		return
+	}
+
 	animation.time += rl.GetFrameTime() * 1000
 	if animation.time > animation.frames[animation.index].duration {
 		animation.time -= animation.frames[animation.index].duration
@@ -52,6 +59,10 @@ animation_draw :: proc(
 	scale: f32 = 1,
 	centered: bool = false,
 ) {
+	if len(animation.frames) == 0 {
+		return
+	}
+
 	current_frame := animation.frames[animation.index]
 	width := current_frame.rect.width
 	height := current_frame.rect.height
@@ -77,7 +88,10 @@ Animation_Frame :: struct {
 	duration: f32,
 }
 
-animation_frame_from_atlas :: proc(atlas: ^atlas.Atlas, frame: string) -> Animation_Frame {
-	frame := atlas.frames[frame]
+animation_frame_from_atlas :: proc(atlas: atlas.Atlas, frame_name: string) -> Animation_Frame {
+	frame, ok := atlas.frames[frame_name]
+	if !ok {
+		panic(fmt.tprintf("Frame not found: '%s'", frame_name))
+	}
 	return {rect = frame.frame, duration = frame.duration}
 }
