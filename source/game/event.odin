@@ -72,6 +72,8 @@ Event_Lose :: struct {}
 
 Event_Fight_Random_Encounter :: struct {}
 
+Event_Fight_Enemy_Take_Hit :: struct {}
+
 Event :: union {
 	Event_Start_Game,
 	Event_Exit,
@@ -100,6 +102,7 @@ Event :: union {
 	Event_Fight_Enemy_Attack_Melee,
 	Event_Fight_Enemy_Attack_Ranged,
 	Event_Fight_Random_Encounter,
+	Event_Fight_Enemy_Take_Hit,
 }
 
 Event_Queue :: struct {

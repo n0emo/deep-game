@@ -73,6 +73,7 @@ Fight_State :: enum {
 	Enemy_Turn,
 	Enemy_Attacking_Melee,
 	Enemy_Attacking_Range,
+	Enemy_Taking_Hit,
 }
 
 World_Fight_Player :: struct {
@@ -86,6 +87,22 @@ World_Fight_Player :: struct {
 	animation_idle:         Animation,
 	animation_attack_melee: Animation,
 	animation_attack_range: Animation,
+}
+
+@(private = "file")
+Pending_Damage_Melee :: struct {
+	damage: int,
+}
+
+@(private = "file")
+Pending_Damage_Ranged :: struct {
+	damage: int,
+}
+
+@(private = "file")
+Pending_Damage :: union {
+	Pending_Damage_Melee,
+	Pending_Damage_Ranged,
 }
 
 @(private = "file")
@@ -111,6 +128,7 @@ World_Fight_Enemy :: struct {
 	animation_idle:           Animation,
 	animation_attack_melee:   Animation,
 	animation_attack_range:   Animation,
+	pending:                  Pending_Damage,
 }
 
 Turn :: enum {
@@ -138,17 +156,44 @@ enemy_make :: proc(
 	enemy_name: string,
 	pos: rl.Vector2,
 ) -> World_Fight_Enemy {
-	return World_Fight_Enemy {
-		hp = enemy_hp,
-		max_hp = enemy_hp,
-		name = enemy_name,
+
+	enemy := World_Fight_Enemy {
+		hp                       = enemy_hp,
+		max_hp                   = enemy_hp,
+		name                     = enemy_name,
 		melee_attack_probability = 1,
-		melee_damage = 1,
-		range_damage = 1,
-		melee_damage_reduction = 0.2,
-		range_damage_reduction = 0.1,
-		animation_current = nil,
+		melee_damage             = 1,
+		range_damage             = 1,
+		melee_damage_reduction   = 0.2,
+		range_damage_reduction   = 0.1,
+		animation_current        = nil,
 	}
+
+	switch enemy_name {
+	case "melee":
+		enemy.range_damage_reduction = 0.1
+		enemy.melee_damage_reduction = 0.1
+	case "range":
+		enemy.melee_damage_reduction = 0.1
+		enemy.range_damage_reduction = 0.1
+	case "gear":
+		enemy.range_damage_reduction = 0.0
+		enemy.melee_damage_reduction = 1.0
+	case "turret":
+		enemy.range_damage_reduction = 0.6
+		enemy.melee_damage_reduction = 0.2
+	case "drone":
+		enemy.range_damage_reduction = 0.2
+		enemy.melee_damage_reduction = 1.0
+	case "servitor":
+		enemy.range_damage_reduction = 0.3
+		enemy.melee_damage_reduction = 0.7
+	case "last_guardian":
+		enemy.range_damage_reduction = 0.5
+		enemy.melee_damage_reduction = 0.5
+	}
+
+	return enemy
 }
 
 @(private = "file")
@@ -184,10 +229,10 @@ enemy_update :: proc(enemy: ^World_Fight_Enemy, queue: ^Event_Queue) {
 @(private = "file")
 player_make :: proc(assets: ^Assets) -> World_Fight_Player {
 	player := World_Fight_Player {
-		hp                     = 1000,
+		hp                     = 10,
 		shield                 = 3,
-		melee_damage           = 2,
-		range_damage           = 1,
+		melee_damage           = 10,
+		range_damage           = 10,
 		animation_current      = nil,
 		animation_idle         = assets.animations.player_fight_idle,
 		animation_attack_melee = assets.animations.player_fight_melee_attack,
@@ -244,14 +289,21 @@ world_fight_update :: proc(f: ^World_Fight, queue: ^Event_Queue) {
 		f.player.pos_interpolator += rl.GetFrameTime()
 		if f.player.pos_interpolator > 1 {
 			f.player.pos_interpolator = 0
-			event_dispatch(queue, Event_Fight_Enemy_Turn{})
+			f.enemy.pending = Pending_Damage_Melee {
+				damage = f.player.melee_damage,
+			}
+			event_dispatch(queue, Event_Fight_Enemy_Take_Hit{})
+
 		}
 
 	case .Player_Attacking_Range:
 		f.projectile_interpolator += rl.GetFrameTime() * PROJECTILE_SPEED
 		if f.projectile_interpolator > 1 {
 			f.projectile_interpolator = 0
-			event_dispatch(queue, Event_Fight_Enemy_Turn{})
+			f.enemy.pending = Pending_Damage_Ranged {
+				damage = f.player.range_damage,
+			}
+			event_dispatch(queue, Event_Fight_Enemy_Take_Hit{})
 		}
 	case .Player_Taking_Hit:
 		switch f.player.parry_state {
@@ -259,6 +311,11 @@ world_fight_update :: proc(f: ^World_Fight, queue: ^Event_Queue) {
 			fallthrough
 		case .Unsuccessfull:
 			rl.TraceLog(.INFO, "Player takes damage")
+			if f.player.shield > 0 {
+				f.player.shield -= 1
+			} else {
+				f.player.hp -= 1
+			}
 		case .Successfull_Parry:
 			rl.TraceLog(.INFO, "Player parried successfully")
 		case .Successfull_Deflect:
@@ -292,6 +349,15 @@ world_fight_update :: proc(f: ^World_Fight, queue: ^Event_Queue) {
 			f.projectile_interpolator = 0
 			event_dispatch(queue, Event_Fight_Player_Take_Hit{})
 		}
+	case .Enemy_Taking_Hit:
+		switch pen in f.enemy.pending {
+		case Pending_Damage_Melee:
+			f.enemy.hp -= int(cast(f32)pen.damage * (1 - f.enemy.melee_damage_reduction))
+			event_dispatch(queue, Event_Fight_Enemy_Turn{})
+		case Pending_Damage_Ranged:
+			f.enemy.hp -= int(cast(f32)pen.damage * (1 - f.enemy.range_damage_reduction))
+			event_dispatch(queue, Event_Fight_Enemy_Turn{})
+		}
 	}
 }
 
@@ -307,7 +373,6 @@ world_fight_ui :: proc(f: ^World_Fight, queue: ^Event_Queue) {
 
 @(private = "file")
 fight_panel_ui :: proc(f: ^World_Fight, queue: ^Event_Queue) {
-	f.enemy.hp = 500
 	// draw_ui_box()
 	draw_enemy_hp(f)
 	draw_player_hp(f)
@@ -341,6 +406,8 @@ fight_panel_ui :: proc(f: ^World_Fight, queue: ^Event_Queue) {
 		)
 
 		ui_player_defending(f, queue)
+	case .Enemy_Taking_Hit:
+	// nothing
 	}
 
 	when ENABLE_DEBUG {
@@ -400,6 +467,8 @@ world_fight_handle_event :: proc(f: ^World_Fight, event: Event) {
 		} else {
 			f.player.parry_state = .Unsuccessfull
 		}
+	case Event_Fight_Enemy_Take_Hit:
+		f.state = .Enemy_Taking_Hit
 	}
 
 }
