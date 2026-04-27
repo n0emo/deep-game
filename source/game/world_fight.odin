@@ -79,6 +79,7 @@ World_Fight_Player :: struct {
 	pos_interpolator:       f32,
 	using stats:            ^Player_Stats,
 	parry_state:            Player_Parry_State,
+	projectile:             Sprite,
 	animation_current:      ^Animation,
 	animation_idle:         Animation,
 	animation_attack_melee: Animation,
@@ -120,6 +121,7 @@ World_Fight_Enemy :: struct {
 	melee_damage_reduction:   f32,
 	range_damage_reduction:   f32,
 	ready_time:               f32,
+	projectile:               Sprite,
 	animation_current:        ^Animation,
 	animation_idle:           Animation,
 	animation_attack_melee:   Animation,
@@ -159,12 +161,9 @@ enemy_make :: proc(
 ) -> World_Fight_Enemy {
 
 	enemy := World_Fight_Enemy {
-		hp                     = enemy_hp,
-		max_hp                 = enemy_hp,
-		name                   = enemy_name,
-		melee_damage_reduction = 0.2,
-		range_damage_reduction = 0.1,
-		animation_current      = nil,
+		hp     = enemy_hp,
+		max_hp = enemy_hp,
+		name   = enemy_name,
 	}
 
 	switch enemy_name {
@@ -182,6 +181,7 @@ enemy_make :: proc(
 		enemy.melee_attack_probability = 0.0
 		enemy.animation_idle = assets.animations.enemy_ranger_idle
 		enemy.animation_attack_ranged = assets.animations.enemy_ranger_ranged_attack
+		enemy.projectile = assets.sprites.projectile_gear
 	case "gear":
 		enemy.range_damage_reduction = 0.0
 		enemy.melee_damage_reduction = 1.0
@@ -198,6 +198,7 @@ enemy_make :: proc(
 		enemy.melee_damage = 0
 		enemy.animation_idle = assets.animations.enemy_turret_idle
 		enemy.animation_attack_ranged = assets.animations.enemy_turret_ranged_attack
+		enemy.projectile = assets.sprites.projectile_metal_ball
 	case "drone":
 		enemy.range_damage_reduction = 0.2
 		enemy.melee_damage_reduction = 1.0
@@ -206,6 +207,7 @@ enemy_make :: proc(
 		enemy.melee_damage = 0
 		enemy.animation_idle = assets.animations.enemy_drone_idle
 		enemy.animation_attack_ranged = assets.animations.enemy_drone_ranged_attack
+		enemy.projectile = assets.sprites.projectile_small_bullet
 	case "servitor":
 		enemy.range_damage_reduction = 0.3
 		enemy.melee_damage_reduction = 0.7
@@ -215,6 +217,7 @@ enemy_make :: proc(
 		enemy.animation_idle = assets.animations.enemy_fanatic_idle
 		enemy.animation_attack_melee = assets.animations.enemy_fanatic_melee_attack
 		enemy.animation_attack_ranged = assets.animations.enemy_fanatic_ranged_attack
+		enemy.projectile = assets.sprites.projectile_spikes
 	case "last_guardian":
 		enemy.range_damage_reduction = 0.5
 		enemy.melee_damage_reduction = 0.5
@@ -224,6 +227,7 @@ enemy_make :: proc(
 		enemy.animation_idle = assets.animations.enemy_lastguardian_idle
 		enemy.animation_attack_melee = assets.animations.enemy_lastguardian_melee_attack
 		enemy.animation_attack_ranged = assets.animations.enemy_lastguardian_ranged_attack
+		enemy.projectile = assets.sprites.projectile_sun_core
 	}
 
 	return enemy
@@ -263,6 +267,7 @@ enemy_update :: proc(enemy: ^World_Fight_Enemy, queue: ^Event_Queue) {
 player_make :: proc(assets: ^Assets, player_stats: ^Player_Stats) -> World_Fight_Player {
 	player := World_Fight_Player {
 		stats                  = player_stats,
+		projectile             = assets.sprites.projectile_brass_bullet,
 		animation_current      = nil,
 		animation_idle         = assets.animations.player_fight_idle,
 		animation_attack_melee = assets.animations.player_fight_melee_attack,
@@ -412,13 +417,15 @@ fight_panel_ui :: proc(f: ^World_Fight, queue: ^Event_Queue) {
 		ui_player_turn(f, queue)
 	case .Player_Attacking_Melee:
 	case .Player_Attacking_Range:
-		x_start, x_end := projectile_bounds()
-		rl.DrawCircle(
-			cast(i32)linalg.lerp(x_start, x_end, f.projectile_interpolator),
-			rl.GetScreenHeight() - FIGHT_LINE,
-			15,
-			rl.RED,
-		)
+		// TODO: Please don't do it like this
+		if f.projectile_interpolator > 0 {
+			x_start, x_end := projectile_bounds()
+			center := rl.Vector2 {
+				linalg.lerp(x_start, x_end, f.projectile_interpolator),
+				f32(rl.GetScreenHeight()) - FIGHT_LINE - 64,
+			}
+			sprite_draw(f.player.projectile, center, scale = SPRITE_SCALE, centered = true)
+		}
 	case .Player_Taking_Hit:
 	case .Enemy_Turn:
 		if f.enemy.ready_time < ENEMY_WARN_TIME {
@@ -428,11 +435,16 @@ fight_panel_ui :: proc(f: ^World_Fight, queue: ^Event_Queue) {
 		ui_player_defending(f, queue)
 	case .Enemy_Attacking_Range:
 		x_end, x_start := projectile_bounds()
-		rl.DrawCircle(
-			cast(i32)linalg.lerp(x_start, x_end, f.projectile_interpolator),
-			rl.GetScreenHeight() - FIGHT_LINE,
-			15,
-			rl.RED,
+		center := rl.Vector2 {
+			linalg.lerp(x_start, x_end, f.projectile_interpolator),
+			f32(rl.GetScreenHeight()) - FIGHT_LINE - 64,
+		}
+		sprite_draw(
+			f.player.projectile,
+			center,
+			scale = SPRITE_SCALE,
+			centered = true,
+			mirror_horizontal = true,
 		)
 
 		ui_player_defending(f, queue)
@@ -474,13 +486,19 @@ world_fight_handle_event :: proc(f: ^World_Fight, event: Event) {
 	case Event_Fight_Enemy_Attack_Melee:
 		f.state = .Enemy_Attacking_Melee
 		f.enemy.pos_interpolator = 0
+		f.enemy.animation_current = &f.enemy.animation_attack_melee
+		animation_reset(f.enemy.animation_current)
 	case Event_Fight_Enemy_Attack_Ranged:
 		f.state = .Enemy_Attacking_Range
 		f.enemy.pos_interpolator = 0
+		f.enemy.animation_current = &f.enemy.animation_attack_ranged
+		animation_reset(f.enemy.animation_current)
 	case Event_Fight_Player_Turn:
 		f.state = .Player_Turn
 	case Event_Fight_Player_Take_Hit:
 		f.state = .Player_Taking_Hit
+		f.enemy.animation_current = &f.enemy.animation_idle
+		animation_reset(f.enemy.animation_current)
 	case Event_Fight_Player_Parry:
 		left, right := parry_bounds()
 		center := parry_center(f)

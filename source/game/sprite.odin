@@ -11,10 +11,16 @@ Sprite :: struct {
 sprite_get :: proc(a: ^atlas.Atlas, name: string) -> (sprite: Sprite, ok: bool) {
 	sprite.frame = a.frames[name] or_return
 	sprite.texture = a.texture
-	return
+	return sprite, true
 }
 
-sprite_draw :: proc(sprite: Sprite, pos: rl.Vector2, scale: f32 = 1, centered: bool = false) {
+sprite_draw :: proc(
+	sprite: Sprite,
+	pos: rl.Vector2,
+	scale: f32 = 1,
+	centered: bool = false,
+	mirror_horizontal: bool = false,
+) {
 	frame := sprite.frame.frame
 	width := frame.width
 	height := frame.height
@@ -30,6 +36,13 @@ sprite_draw :: proc(sprite: Sprite, pos: rl.Vector2, scale: f32 = 1, centered: b
 	} else {
 		dest.x = pos.x
 		dest.y = pos.y
+	}
+
+	if mirror_horizontal {
+		frame.x += frame.width
+		frame.y += frame.height
+		frame.width *= -1
+		frame.height *= -1
 	}
 
 	rl.DrawTexturePro(sprite.texture, frame, dest, 0, 0, rl.WHITE)

@@ -17,8 +17,12 @@ Assets :: struct {
 }
 
 assets_load :: proc(assets_dir: string = "assets") -> ^Assets {
+	ok: bool
+
 	assets := new(Assets)
-	assets.sprites = assets_sprites_load(fmt.tprintf("%s/%s", assets_dir, "sprites"))
+	if assets.sprites, ok = assets_sprites_load(fmt.tprintf("%s/%s", assets_dir, "sprites")); !ok {
+		panic("Could not load sprites")
+	}
 	assets.animations, _ = assets_animations_from_sprites(assets.sprites)
 	assets.audio = assets_audio_load(slashpath.join({assets_dir, "audio"}, context.temp_allocator))
 	assets.tiled_loader = tiled.loader_make()
@@ -44,26 +48,34 @@ assets_unload :: proc(assets: ^Assets) {
 }
 
 Assets_Sprites :: struct {
-	player:               atlas.Atlas,
-	fight_entity:         atlas.Atlas,
-	icons:                atlas.Atlas,
-	icon_arrow_down:      Sprite,
-	icon_attack_mellee:   Sprite,
-	icon_attack_range:    Sprite,
-	icon_damage:          Sprite,
-	icon_exclamation:     Sprite,
-	icon_exit:            Sprite,
-	icon_heart:           Sprite,
-	icon_parry:           Sprite,
-	icon_retry:           Sprite,
-	icon_settings:        Sprite,
-	icon_shield:          Sprite,
-	icon_start_game:      Sprite,
-	bg_main_menu:         rl.Texture2D,
-	bg_dead:              rl.Texture2D,
-	bg_win:               rl.Texture2D,
-	fight_background:     rl.Texture2D,
-	player_transitioning: rl.Texture2D,
+	player:                  atlas.Atlas,
+	fight_entity:            atlas.Atlas,
+	icons:                   atlas.Atlas,
+	projectiles:             atlas.Atlas,
+	icon_arrow_down:         Sprite,
+	icon_attack_mellee:      Sprite,
+	icon_attack_range:       Sprite,
+	icon_damage:             Sprite,
+	icon_exclamation:        Sprite,
+	icon_exit:               Sprite,
+	icon_heart:              Sprite,
+	icon_parry:              Sprite,
+	icon_retry:              Sprite,
+	icon_settings:           Sprite,
+	icon_shield:             Sprite,
+	icon_start_game:         Sprite,
+	projectile_gear:         Sprite,
+	projectile_brass_bullet: Sprite,
+	projectile_sun_core:     Sprite,
+	projectile_bearing:      Sprite,
+	projectile_metal_ball:   Sprite,
+	projectile_small_bullet: Sprite,
+	projectile_spikes:       Sprite,
+	bg_main_menu:            rl.Texture2D,
+	bg_dead:                 rl.Texture2D,
+	bg_win:                  rl.Texture2D,
+	fight_background:        rl.Texture2D,
+	player_transitioning:    rl.Texture2D,
 }
 
 Assets_Animations :: struct {
@@ -114,17 +126,31 @@ Assets_Audio :: struct {
 }
 
 @(private = "file")
-assets_sprites_load :: proc(sprites_dir: string) -> Assets_Sprites {
-	return Assets_Sprites {
-		player = load_atlas(sprites_dir, "player.json"),
-		fight_entity = load_atlas(sprites_dir, "fight-entity.json"),
-		icons = load_atlas(sprites_dir, "icons.json"),
-		bg_main_menu = load_sprite(sprites_dir, "background-main-menu.png"),
-		bg_dead = load_sprite(sprites_dir, "background-dead.png"),
-		bg_win = load_sprite(sprites_dir, "background-win.png"),
-		fight_background = load_sprite(sprites_dir, "fight-background.png"),
-		player_transitioning = load_sprite(sprites_dir, "player-main-menu.png"),
+assets_sprites_load :: proc(sprites_dir: string) -> (sprites: Assets_Sprites, ok: bool) {
+	player := load_atlas(sprites_dir, "player.json")
+	fight_entity := load_atlas(sprites_dir, "fight-entity.json")
+	icons := load_atlas(sprites_dir, "icons.json")
+	projectiles := load_atlas(sprites_dir, "projectiles.json")
+
+	sprites = Assets_Sprites {
+		player                  = player,
+		fight_entity            = fight_entity,
+		icons                   = icons,
+		projectiles             = projectiles,
+		bg_main_menu            = load_sprite(sprites_dir, "background-main-menu.png"),
+		bg_dead                 = load_sprite(sprites_dir, "background-dead.png"),
+		bg_win                  = load_sprite(sprites_dir, "background-win.png"),
+		fight_background        = load_sprite(sprites_dir, "fight-background.png"),
+		player_transitioning    = load_sprite(sprites_dir, "player-main-menu.png"),
+		projectile_gear         = sprite_get(&projectiles, "projectile-gear") or_return,
+		projectile_brass_bullet = sprite_get(&projectiles, "projectile-brass-bullet") or_return,
+		projectile_sun_core     = sprite_get(&projectiles, "projectile-sun-core") or_return,
+		projectile_bearing      = sprite_get(&projectiles, "projectile-bearing") or_return,
+		projectile_metal_ball   = sprite_get(&projectiles, "projectile-metal-ball") or_return,
+		projectile_small_bullet = sprite_get(&projectiles, "projectile-small-bullet") or_return,
+		projectile_spikes       = sprite_get(&projectiles, "projectile-spikes") or_return,
 	}
+	return sprites, true
 }
 
 @(private = "file")
