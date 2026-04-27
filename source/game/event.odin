@@ -84,6 +84,8 @@ Event_Fight_Player_Get_Hurt :: struct {}
 
 Event_Fight_Enemy_Dead :: struct {}
 
+Event_Fight_Enemy_Warn_Please :: struct {}
+
 Event :: union {
 	Event_Start_Game,
 	Event_Exit,
@@ -118,6 +120,7 @@ Event :: union {
 	Event_Fight_Deflect_Success,
 	Event_Fight_Player_Get_Hurt,
 	Event_Fight_Enemy_Dead,
+	Event_Fight_Enemy_Warn_Please,
 }
 
 Event_Queue :: struct {

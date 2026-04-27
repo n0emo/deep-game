@@ -137,7 +137,9 @@ game_draw :: proc(g: ^Game_Memory) {
 		win_screen_ui(&g.win_screen, &g.event_queue)
 	}
 
-	rl.DrawFPS(10, 10)
+	when ENABLE_DEBUG {
+		rl.DrawFPS(10, 10)
+	}
 
 	rl.EndDrawing()
 }

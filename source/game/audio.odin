@@ -59,7 +59,7 @@ audio_system_handle_event :: proc(a: ^Audio_System, event: Event) {
 		play_sound(a, a.assets.fx_button)
 	case Event_Player_Moving:
 		play_sound(a, a.assets.fx_steps)
-	case Event_Fight_Enemy_Warn:
+	case Event_Fight_Enemy_Warn_Please:
 		play_sound(a, a.assets.fx_warning)
 	case Event_Fight_Player_Attack_Melee:
 		play_sound(a, a.assets.fx_action)

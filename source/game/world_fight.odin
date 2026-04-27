@@ -132,6 +132,7 @@ World_Fight_Enemy :: struct {
 	animation_attack_melee:   Animation,
 	animation_attack_ranged:  Animation,
 	pending:                  Pending_Damage,
+	warned:                   bool,
 }
 
 Turn :: enum {
@@ -366,8 +367,9 @@ world_fight_update :: proc(f: ^World_Fight, queue: ^Event_Queue) {
 
 	case .Enemy_Turn:
 		f.enemy.ready_time -= rl.GetFrameTime()
-		if f.enemy.ready_time < ENEMY_WARN_TIME {
-			event_dispatch(queue, Event_Fight_Enemy_Warn{})
+		if f.enemy.ready_time < ENEMY_WARN_TIME && !f.enemy.warned {
+			event_dispatch(queue, Event_Fight_Enemy_Warn_Please{})
+			f.enemy.warned = true
 		}
 		if f.enemy.ready_time < 0 {
 			if rand.float32() < f.enemy.melee_attack_probability {
@@ -495,6 +497,7 @@ world_fight_handle_event :: proc(f: ^World_Fight, event: Event) {
 		f.player.parry_state = .Not_Yed_Tried
 		f.state = .Enemy_Turn
 		f.enemy.ready_time = ENEMY_READY_TIME
+		f.enemy.warned = false
 	case Event_Fight_Enemy_Attack_Melee:
 		f.state = .Enemy_Attacking_Melee
 		f.enemy.pos_interpolator = 0
