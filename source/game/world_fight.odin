@@ -1,6 +1,5 @@
 package game
 
-import atlas "../atlas"
 import "core:fmt"
 import "core:math/linalg"
 import "core:math/rand"
@@ -78,10 +77,7 @@ Fight_State :: enum {
 
 World_Fight_Player :: struct {
 	pos_interpolator:       f32,
-	hp:                     int,
-	shield:                 int,
-	melee_damage:           int,
-	range_damage:           int,
+	using stats:            ^Player_Stats,
 	parry_state:            Player_Parry_State,
 	animation_current:      ^Animation,
 	animation_idle:         Animation,
@@ -127,7 +123,7 @@ World_Fight_Enemy :: struct {
 	animation_current:        ^Animation,
 	animation_idle:           Animation,
 	animation_attack_melee:   Animation,
-	animation_attack_range:   Animation,
+	animation_attack_ranged:  Animation,
 	pending:                  Pending_Damage,
 }
 
@@ -136,10 +132,15 @@ Turn :: enum {
 	Enemy,
 }
 
-world_fight_make :: proc(assets: ^Assets, enemy_hp: int, enemy_name: string) -> World_Fight {
-	player := player_make(assets)
+world_fight_make :: proc(
+	assets: ^Assets,
+	enemy_hp: int,
+	enemy_name: string,
+	player_stats: ^Player_Stats,
+) -> World_Fight {
+	player := player_make(assets, player_stats)
 	enemy := enemy_make(
-		&assets.sprites.player,
+		assets,
 		enemy_hp,
 		enemy_name,
 		rl.Vector2{cast(f32)(rl.GetScreenWidth() / 8), 0},
@@ -151,46 +152,78 @@ world_fight_make :: proc(assets: ^Assets, enemy_hp: int, enemy_name: string) -> 
 // TODO: melee/ranged attack probability
 @(private = "file")
 enemy_make :: proc(
-	atlas: ^atlas.Atlas,
+	assets: ^Assets,
 	enemy_hp: int,
 	enemy_name: string,
 	pos: rl.Vector2,
 ) -> World_Fight_Enemy {
 
 	enemy := World_Fight_Enemy {
-		hp                       = enemy_hp,
-		max_hp                   = enemy_hp,
-		name                     = enemy_name,
-		melee_attack_probability = 1,
-		melee_damage             = 1,
-		range_damage             = 1,
-		melee_damage_reduction   = 0.2,
-		range_damage_reduction   = 0.1,
-		animation_current        = nil,
+		hp                     = enemy_hp,
+		max_hp                 = enemy_hp,
+		name                   = enemy_name,
+		melee_damage_reduction = 0.2,
+		range_damage_reduction = 0.1,
+		animation_current      = nil,
 	}
 
 	switch enemy_name {
 	case "melee":
 		enemy.range_damage_reduction = 0.1
 		enemy.melee_damage_reduction = 0.1
+		enemy.melee_attack_probability = 1
+		enemy.melee_damage = 1
+		enemy.range_damage = 0
+		enemy.animation_idle = assets.animations.enemy_melee_idle
+		enemy.animation_attack_melee = assets.animations.enemy_melee_melee_attack
 	case "range":
 		enemy.melee_damage_reduction = 0.1
 		enemy.range_damage_reduction = 0.1
+		enemy.melee_attack_probability = 0.0
+		enemy.animation_idle = assets.animations.enemy_ranger_idle
+		enemy.animation_attack_ranged = assets.animations.enemy_ranger_ranged_attack
 	case "gear":
 		enemy.range_damage_reduction = 0.0
 		enemy.melee_damage_reduction = 1.0
+		enemy.melee_attack_probability = 1.0
+		enemy.melee_damage = 1
+		enemy.range_damage = 0
+		enemy.animation_idle = assets.animations.enemy_gear_idle
+		enemy.animation_attack_melee = assets.animations.enemy_gear_melee_attack
 	case "turret":
 		enemy.range_damage_reduction = 0.6
 		enemy.melee_damage_reduction = 0.2
+		enemy.melee_attack_probability = 0.0
+		enemy.range_damage = 1
+		enemy.melee_damage = 0
+		enemy.animation_idle = assets.animations.enemy_turret_idle
+		enemy.animation_attack_ranged = assets.animations.enemy_turret_ranged_attack
 	case "drone":
 		enemy.range_damage_reduction = 0.2
 		enemy.melee_damage_reduction = 1.0
+		enemy.melee_attack_probability = 0.0
+		enemy.range_damage = 1
+		enemy.melee_damage = 0
+		enemy.animation_idle = assets.animations.enemy_drone_idle
+		enemy.animation_attack_ranged = assets.animations.enemy_drone_ranged_attack
 	case "servitor":
 		enemy.range_damage_reduction = 0.3
 		enemy.melee_damage_reduction = 0.7
+		enemy.melee_attack_probability = 0.0
+		enemy.range_damage = 1
+		enemy.melee_damage = 0
+		enemy.animation_idle = assets.animations.enemy_fanatic_idle
+		enemy.animation_attack_melee = assets.animations.enemy_fanatic_melee_attack
+		enemy.animation_attack_ranged = assets.animations.enemy_fanatic_ranged_attack
 	case "last_guardian":
 		enemy.range_damage_reduction = 0.5
 		enemy.melee_damage_reduction = 0.5
+		enemy.melee_attack_probability = 0.5
+		enemy.range_damage = 1
+		enemy.melee_damage = 1
+		enemy.animation_idle = assets.animations.enemy_lastguardian_idle
+		enemy.animation_attack_melee = assets.animations.enemy_lastguardian_melee_attack
+		enemy.animation_attack_ranged = assets.animations.enemy_lastguardian_ranged_attack
 	}
 
 	return enemy
@@ -227,12 +260,9 @@ enemy_update :: proc(enemy: ^World_Fight_Enemy, queue: ^Event_Queue) {
 }
 
 @(private = "file")
-player_make :: proc(assets: ^Assets) -> World_Fight_Player {
+player_make :: proc(assets: ^Assets, player_stats: ^Player_Stats) -> World_Fight_Player {
 	player := World_Fight_Player {
-		hp                     = 10,
-		shield                 = 3,
-		melee_damage           = 10,
-		range_damage           = 10,
+		stats                  = player_stats,
 		animation_current      = nil,
 		animation_idle         = assets.animations.player_fight_idle,
 		animation_attack_melee = assets.animations.player_fight_melee_attack,
@@ -375,7 +405,7 @@ world_fight_ui :: proc(f: ^World_Fight, queue: ^Event_Queue) {
 fight_panel_ui :: proc(f: ^World_Fight, queue: ^Event_Queue) {
 	// draw_ui_box()
 	draw_enemy_hp(f)
-	draw_player_hp(f)
+	draw_player_stats(f)
 
 	switch f.state {
 	case .Player_Turn:
@@ -566,10 +596,17 @@ draw_ui_box :: proc() {
 	)
 }
 
+
 @(private = "file")
-draw_player_hp :: proc(f: ^World_Fight) {
+draw_player_stats :: proc(f: ^World_Fight) {
 	font_size :: 32
-	text := fmt.ctprintf("HP=%v \nShield=%v", f.player.hp, f.player.shield)
+	text := fmt.ctprintf(
+		"HP:%v \nShield:%v \nMelee dmg.:%v\n Range dmg.:%v",
+		f.player.hp,
+		f.player.shield,
+		f.player.melee_damage,
+		f.player.range_damage,
+	)
 	rl.DrawText(
 		text,
 		PADDING,

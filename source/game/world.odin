@@ -1,5 +1,9 @@
 package game
 
+import "core:math/rand"
+import rl "vendor:raylib"
+
+
 World :: struct {
 	state:           World_State,
 	transition:      World_Transitioning,
@@ -8,6 +12,14 @@ World :: struct {
 	tilemaps:        [2]Tile_Map,
 	current_tilemap: int,
 	assets:          ^Assets,
+	player_stats:    Player_Stats,
+}
+
+Player_Stats :: struct {
+	hp:           int,
+	shield:       int,
+	melee_damage: int,
+	range_damage: int,
 }
 
 @(private = "file")
@@ -29,6 +41,12 @@ world_make :: proc(assets: ^Assets) -> ^World {
 
 	tilemaps := [2]Tile_Map{tilemap_1, tilemap_2}
 
+	player_stats := Player_Stats {
+		hp           = 10,
+		shield       = 3,
+		melee_damage = 3,
+		range_damage = 3,
+	}
 	world := new(World)
 	world^ = {
 		state           = .Transitioning,
@@ -36,6 +54,7 @@ world_make :: proc(assets: ^Assets) -> ^World {
 		tilemaps        = tilemaps,
 		current_tilemap = -1,
 		assets          = assets,
+		player_stats    = player_stats,
 	}
 	world.overworld = world_overworld_make(assets, &world.tilemaps[0], world.current_tilemap + 1)
 
@@ -99,8 +118,17 @@ world_handle_event :: proc(w: ^World, event: Event) {
 	#partial switch e in event {
 	case Event_Fight_Begin:
 		w.state = .Fight
-		w.fight = world_fight_make(w.assets, e.hp, e.enemy_name)
+		w.fight = world_fight_make(w.assets, e.hp, e.enemy_name, &w.player_stats)
 	case Event_Fight_Win:
+		rng := rand.int_max(2)
+		rl.TraceLog(.INFO, "%d", rng)
+		switch rng {
+		case 0:
+			w.fight.player.melee_damage += 2
+		case 1:
+			w.fight.player.range_damage += 2
+		}
+		w.fight.player.shield += 1
 		w.state = .Overworld
 	case Event_Transition:
 		w.state = .Transitioning
