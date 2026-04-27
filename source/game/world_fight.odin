@@ -638,8 +638,8 @@ draw_player_stats :: proc(f: ^World_Fight) {
 	text := fmt.ctprintf(
 		"HP:%v      Melee dmg.:%v \nShield:%v Range dmg.:%v",
 		f.player.hp,
-		f.player.shield,
 		f.player.melee_damage,
+		f.player.shield,
 		f.player.range_damage,
 	)
 	rl.DrawText(
