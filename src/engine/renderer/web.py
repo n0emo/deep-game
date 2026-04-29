@@ -17,12 +17,12 @@ class Renderer(base.Renderer):
     def __init__(self, canvas: CANVAS) -> None:
         self.__canvas = canvas
         self.__ctx = canvas.getContext("2d")
-        self.__ctx.webkitImageSmoothingEnabled = False
-        self.__ctx.mozImageSmoothingEnabled = False
-        self.__ctx.imageSmoothingEnabled = False
 
     @property
     def canvas(self) -> CANVAS:
+        self.__ctx.webkitImageSmoothingEnabled = False
+        self.__ctx.mozImageSmoothingEnabled = False
+        self.__ctx.imageSmoothingEnabled = False
         return self.__canvas
 
     @property
