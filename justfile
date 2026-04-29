@@ -6,24 +6,42 @@ ext := if os_family() == "windows" { "bat" } else { "sh" }
 @default:
     just --list --unsorted
 
-prepare:
+run:
+    uv run jurigged -v ./src/main.py
+
+check:
+    uv run mypy src
+    uv run ruff check
+
+format:
+    uv run ruff format
+
+prepare: check format
+
+build-web:
+    uv run ./src/build_web.py
+
+serve:
+    uv run -m http.server -d ./build/web
+
+odin-prepare:
     odinfmt source -w
     just hot-reload
     just build-debug
     just build-release
     just build-web
 
-build-debug:
+odin-build-debug:
     ./scripts/build_debug.{{ ext }}
 
-build-release:
+odin-build-release:
     ./scripts/build_release.{{ ext }}
 
-hot-reload:
+odin-hot-reload:
     ./scripts/build_hot_reload.{{ ext }}
 
-hot-reload-watch:
+odin-hot-reload-watch:
     watchexec -w source './scripts/build_hot_reload.{{ ext }}'
 
-build-web:
+odin-build-web:
     ./scripts/build_web.{{ ext }}

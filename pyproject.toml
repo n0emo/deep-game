@@ -1,0 +1,38 @@
+[project]
+name = "lastshot"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+authors = [
+    { name = "Albert Shefner", email = "usn0emo@gmail.com" },
+    { name = "Viktoria Sapronova", email = "l0vpreslava@gmail.com" },
+    { name = "Khadgimurad Akhmedov", email = "tearus2002@mail.ru" },
+    { name = "Sergey Maslennikov", email = "sergeymas125@live.com" },
+]
+requires-python = "==3.12.*"
+dependencies = [
+    "raylib>=5.5",
+]
+
+[dependency-groups]
+dev = [
+    "jurigged[develoop]>=0.6.1",
+    "mypy>=1.20.2",
+    "pyright>=1.1.409",
+    "ruff>=0.15.12",
+]
+
+[project.scripts]
+lastshot = "lastshot:main.main"
+
+[build-system]
+requires = ["uv_build>=0.11.8,<0.12"]
+build-backend = "uv_build"
+
+[tool.mypy]
+python_version = "3.12"
+warn_return_any = true
+disallow_untyped_defs = true
+exclude = [
+    'web',  # TOML literal string (single-quotes, no escaping necessary)
+]
