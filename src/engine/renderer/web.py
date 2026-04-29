@@ -17,17 +17,21 @@ class Renderer(base.Renderer):
     def __init__(self, canvas: CANVAS) -> None:
         self.__canvas = canvas
         self.__ctx = canvas.getContext("2d")
+        self.__set_image_smoothing(False)
 
     @property
     def canvas(self) -> CANVAS:
-        self.__ctx.webkitImageSmoothingEnabled = False
-        self.__ctx.mozImageSmoothingEnabled = False
-        self.__ctx.imageSmoothingEnabled = False
         return self.__canvas
 
     @property
     def ctx(self) -> CanvasRenderingContext2D:
         return self.__ctx
+
+    @override
+    def resize(self, width: int, height: int) -> None:
+        self.__canvas.setAttribute("width", width)
+        self.__canvas.setAttribute("height", height)
+        self.__set_image_smoothing(False)
 
     @override
     def clear(self, color: Color) -> None:
@@ -124,3 +128,8 @@ class Renderer(base.Renderer):
 
     def __fill_style(self, color: Color) -> None:
         self.ctx.fillStyle = f"rgba({color.r}, {color.g}, {color.b}, {color.a})"
+
+    def __set_image_smoothing(self, smoothing: bool) -> None:
+        self.__ctx.webkitImageSmoothingEnabled = False
+        self.__ctx.mozImageSmoothingEnabled = False
+        self.__ctx.imageSmoothingEnabled = False

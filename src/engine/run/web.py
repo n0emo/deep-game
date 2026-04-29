@@ -10,14 +10,14 @@ def run(app_factory: Callable[[], Application]) -> None:
     canvas.setAttribute("width", int(window.innerWidth))
     canvas.setAttribute("height", int(window.innerHeight))
 
-    @bind(window, "resize")
-    def onresize(ev):
-        canvas.setAttribute("width", int(window.innerWidth))
-        canvas.setAttribute("height", int(window.innerHeight))
-
     previous_time = 0.0
     app = app_factory()
     app.renderer = Renderer(canvas)
+
+    @bind(window, "resize")
+    def onresize(ev):
+        width, height = int(window.innerWidth), int(window.innerHeight)
+        app.renderer.resize(width, height)
 
     def frame(time: float) -> None:
         nonlocal previous_time

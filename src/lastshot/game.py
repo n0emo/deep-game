@@ -15,7 +15,7 @@ class Game(Application):
         self.renderer.texture_pro(
             texture=self.texture,
             source=Rectangle(0, 0, -128, 128),
-            dest=Rectangle(0, 0, 128*5, 128*5),
+            dest=Rectangle(0, 0, 128 * 5, 128 * 5),
             origin=Vector2(0, 0),
             rotation=0,
             tint=Color(255, 255, 255, 255),

@@ -7,6 +7,9 @@ from engine.vector2 import Vector2
 
 class Renderer(ABC):
     @abstractmethod
+    def resize(self, width: int, height: int) -> None: ...
+
+    @abstractmethod
     def clear(self, color: Color) -> None: ...
 
     @abstractmethod

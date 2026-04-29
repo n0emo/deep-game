@@ -1,9 +1,8 @@
 from shutil import copytree, rmtree, make_archive
-from os import makedirs, walk
+from os import makedirs
 from pathlib import Path
 from sys import stderr
 from dataclasses import dataclass
-import zipfile
 import traceback
 
 

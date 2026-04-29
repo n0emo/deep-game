@@ -9,6 +9,10 @@ from . import base
 
 class Renderer(base.Renderer):
     @override
+    def resize(self, width: int, height: int) -> None:
+        pass
+
+    @override
     def clear(self, color: Color) -> None:
         pyray.clear_background(astuple(color))
 
