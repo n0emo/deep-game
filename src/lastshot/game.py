@@ -1,12 +1,17 @@
 from pathlib import Path
 from typing import override
 from engine import Application, Context, Texture, Color, Vector2, Rectangle
+from tiled import Loader
 
 
 class Game(Application):
     def __init__(self) -> None:
         self.texture = Texture.load(
             Path("assets", "sprites", "background-main-menu.png")
+        )
+        self.loader = Loader()
+        self.tileset = self.loader.load_tileset(
+            Path("assets", "tilesets", "steampunk.tsj")
         )
 
     @override
