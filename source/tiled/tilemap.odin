@@ -60,6 +60,7 @@ tilemap_load :: proc(
 				x       = l_desc.x,
 				y       = l_desc.y,
 				width   = l_desc.width,
+				
 				height  = l_desc.height,
 				name    = strings.clone(l_desc.name),
 				class   = strings.clone(l_desc.class),

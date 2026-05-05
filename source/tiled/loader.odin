@@ -23,3 +23,4 @@ loader_destroy :: proc(loader: ^Loader) {
 	}
 	free(loader)
 }
+

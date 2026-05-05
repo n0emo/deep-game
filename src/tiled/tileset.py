@@ -5,7 +5,7 @@ from engine import Rectangle, Texture
 
 
 @dataclass
-class Tile:
+class TilesetTile:
     type: str
     frame: Rectangle
 
@@ -26,4 +26,7 @@ class Tileset:
     tiledversion: str
     tileheight: int
     tilewidth: int
-    tiles: List[Tile]
+    tiles: List[TilesetTile]
+
+    def get_tile(self, id: int) -> TilesetTile:
+        return self.tiles[id]
