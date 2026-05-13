@@ -205,8 +205,8 @@ def _make_enemy(assets: Assets, hp: int, name: str) -> _FightEnemy:
             melee_damage=1,
             range_damage=1,
             animation_idle=a.enemy_fanatic_idle,
-            animation_attack_melee=a.enemy_fanatic_ranged_attack,
-            animation_attack_ranged=a.enemy_fanatic_melee_attack,
+            animation_attack_melee=a.enemy_fanatic_melee_attack,
+            animation_attack_ranged=a.enemy_fanatic_ranged_attack,
             projectile=s.projectile_spikes,
         ),
         "last_guardian": dict(
