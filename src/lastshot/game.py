@@ -1,31 +1,59 @@
 from pathlib import Path
 from typing import override
-from engine import Application, Context, Texture, Color, Vector2, Rectangle
-from tiled import Loader, TileLayer
+from engine import Application, Context, Texture, Vector2, Rectangle, Renderer
+from tiled import TileLayer
+from abc import ABC, abstractmethod
 
 TILESIZE = 16
 
 
-class Game(Application):
+class Scene(ABC):
+    @abstractmethod
+    def draw(self, renderer: Renderer) -> None: ...
+
+    @abstractmethod
+    def update(self, dt: float) -> None: ...
+
+
+class MenuScene(Scene):
+    background: Texture
+
     def __init__(self) -> None:
-        self.texture = Texture.load(
+        self.background = Texture.load(
             Path("assets", "sprites", "background-main-menu.png")
-        )
-        self.loader = Loader()
-        self.level_1 = self.loader.load_tilemap(
-            Path("assets", "tilemaps", "level-1.tmj")
-        )
-        self.level_2 = self.loader.load_tilemap(
-            Path("assets", "tilemaps", "level-2.tmj")
         )
 
     @override
+    def draw(self, renderer: Renderer) -> None:
+        renderer.texture(self.background, 0, 0)
+
+    @override
+    def update(self, dt: float) -> None:
+        pass
+
+
+class GameScene(Scene):
+    pass
+
+
+class WinScene(Scene):
+    pass
+
+
+class DeadScene(Scene):
+    pass
+
+
+class Game(Application):
+    __current_scene: Scene
+
+    def __init__(self) -> None:
+        self.__current_scene = MenuScene()
+
+    @override
     def frame(self, ctx: Context) -> None:
-        self.renderer.clear(Color(255, 255, 255, 255))
-        assert isinstance(self.level_1.layers[0], TileLayer)
-        assert isinstance(self.level_1.layers[1], TileLayer)
-        self.draw_layer(self.level_1.layers[0])
-        self.draw_layer(self.level_1.layers[1])
+        self.__current_scene.update(ctx.dt)
+        self.__current_scene.draw(self.renderer)
 
     def draw_layer(self, layer: TileLayer) -> None:
         for x in range(0, layer.width):

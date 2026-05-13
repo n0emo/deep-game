@@ -12,3 +12,8 @@ from .renderer import Renderer as Renderer
 from .run import run as run
 from .texture import Texture as Texture
 from .vector2 import Vector2 as Vector2
+from .event import (
+    EventDispatcher as EventDispatcher,
+    Event as Event,
+    Callback as Callback,
+)
