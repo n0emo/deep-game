@@ -3,6 +3,7 @@ from os import makedirs
 from pathlib import Path
 from sys import stderr
 from dataclasses import dataclass
+import subprocess
 import traceback
 
 
@@ -31,9 +32,29 @@ def main() -> None:
 
     print(f"Created {ctx.target_dir}/")
 
+    subprocess.run(
+        [
+            "python3",
+            "-m",
+            "pygbag",
+            "--PYBUILD",
+            "3.12",
+            "--build",
+            "--ume_block",
+            "0",
+            "build/web",
+        ]
+    )
+
     zip_path = ctx.target_dir.parent.joinpath("web")
+    print(f"Game built successfully. Creating archive {zip_path}.zip")
+
     try:
-        make_archive(str(zip_path), format="zip", root_dir=ctx.target_dir)
+        make_archive(
+            str(zip_path),
+            format="zip",
+            root_dir=ctx.target_dir.joinpath("build").joinpath("web"),
+        )
 
     except Exception as e:
         print("ERROR: Could not create archive", file=stderr)

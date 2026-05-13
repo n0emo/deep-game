@@ -1,13 +1,13 @@
-from typing import List, Dict
+from typing import List, Dict, Optional
 from dataclasses import dataclass, field
-from engine import Rectangle, Texture
+from pyray import Rectangle, Texture
 
 
 @dataclass
 class Tile:
     type: str = ""
     frame: Rectangle = field(default_factory=Rectangle)
-    texture: Texture | None = None
+    texture: Optional[Texture] = None
     flipped_horizontally: bool = False
     flipped_vertically: bool = False
     flipped_diagonally: bool = False

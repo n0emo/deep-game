@@ -11,6 +11,7 @@ authors = [
 ]
 requires-python = "==3.12.*"
 dependencies = [
+    "black>=26.3.1",
     "raylib>=5.5",
 ]
 
@@ -18,6 +19,7 @@ dependencies = [
 dev = [
     "jurigged[develoop]>=0.6.1",
     "mypy>=1.20.2",
+    "pygbag>=0.9.3",
     "pyright>=1.1.409",
     "ruff>=0.15.12",
 ]

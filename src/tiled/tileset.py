@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from pathlib import Path
 from typing import List
-from engine import Rectangle, Texture
+from pyray import Rectangle, Texture
 
 
 @dataclass

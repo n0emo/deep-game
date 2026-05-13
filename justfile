@@ -10,7 +10,7 @@ run:
     uv run jurigged -v ./src/main.py
 
 check:
-    uv run mypy src
+    uv run mypy src --fix
     uv run ruff check
 
 format:

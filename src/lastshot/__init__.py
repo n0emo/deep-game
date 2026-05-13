@@ -1,1 +1,1 @@
-from lastshot.game import Game as Game
+from .game import Game as Game

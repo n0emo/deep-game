@@ -1,7 +1,5 @@
-package game
-
-import "core:c"
-import rl "vendor:raylib"
+from __future__ import annotations
+import pyray as rl
 
 
 def text_centered(
@@ -27,7 +25,7 @@ def button_centered(
 ) -> bool:
     if offset is None:
         offset = rl.Vector2(0, 0)
-    return rl.gui_button(
+    result = rl.gui_button(
         rl.Rectangle(
             (rl.get_screen_width() - size.x) * 0.5 + offset.x,
             (rl.get_screen_height() - size.y) * 0.5 + offset.y,
@@ -36,6 +34,7 @@ def button_centered(
         ),
         text,
     )
+    return result == 1
 
 
 def slider_centered(
@@ -46,7 +45,9 @@ def slider_centered(
 ) -> tuple[bool, float]:
     if offset is None:
         offset = rl.Vector2(0, 0)
-    value = rl.gui_slider_bar(
+
+    c_value = rl.ffi.new("float *", value)
+    rl.gui_slider_bar(
         rl.Rectangle(
             (rl.get_screen_width() - size.x) * 0.5 + offset.x,
             (rl.get_screen_height() - size.y) * 0.5 + offset.y,
@@ -55,37 +56,34 @@ def slider_centered(
         ),
         text,
         f"{value:.0f}%",
-        value,
+        c_value,
         0,
         100,
     )
-    return value == 1, value
+    new_value = c_value[0]
+    return new_value == 100.0, new_value
 
-background_texture_centered :: proc(texture: rl.Texture, align_top: bool = false) {
-	// TODO: this aspect handling may be incorect but i have square picture and could not test
-	aspect := f32(texture.width) / f32(texture.height)
-	x := f32(0)
-	y := f32(0)
-	width := f32(rl.GetScreenWidth())
-	height := f32(rl.GetScreenHeight())
-	if width > height {
-		width = height * aspect
-		x = (f32(rl.GetScreenWidth()) - width) * 0.5
-	} else {
-		height = width * aspect
-		y = (f32(rl.GetScreenHeight()) - height) * 0.5
-	}
 
-	if align_top {
-		y = 0
-	}
-
-	rl.DrawTexturePro(
-		texture,
-		{x = 0, y = 0, width = f32(texture.width), height = f32(texture.height)},
-		{x = x, y = y, width = width, height = height},
-		0,
-		0,
-		rl.WHITE,
-	)
-}
+def background_texture_centered(texture: rl.Texture, align_top: bool = False) -> None:
+    # TODO: this aspect handling may be incorrect but i have square picture and could not test
+    aspect = texture.width / texture.height
+    x = 0.0
+    y = 0.0
+    width = float(rl.get_screen_width())
+    height = float(rl.get_screen_height())
+    if width > height:
+        width = height * aspect
+        x = (rl.get_screen_width() - width) * 0.5
+    else:
+        height = width * aspect
+        y = (rl.get_screen_height() - height) * 0.5
+    if align_top:
+        y = 0
+    rl.draw_texture_pro(
+        texture,
+        rl.Rectangle(0, 0, float(texture.width), float(texture.height)),
+        rl.Rectangle(x, y, width, height),
+        rl.Vector2(0, 0),
+        0,
+        rl.WHITE,
+    )

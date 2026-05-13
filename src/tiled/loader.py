@@ -2,7 +2,7 @@ from pathlib import Path
 from .tilemap import Tilemap, TileLayer, ObjectLayer, Layer, Object, Tile, ObjectValue
 from .tileset import Tileset, TilesetTile
 import json
-from engine import Rectangle, Texture
+from pyray import Rectangle, load_texture
 from typing import Dict, List, Tuple
 
 
@@ -25,7 +25,7 @@ class Loader:
 
         image = data["image"]
         imagepath = path.parent.joinpath(image)
-        texture = Texture.load(imagepath)
+        texture = load_texture(str(imagepath))
 
         tilecount = data["tilecount"]
         tileheight = data["tileheight"]
@@ -40,7 +40,7 @@ class Loader:
         for id in range(tilecount):
             x = id % width * tilewidth
             y = id // width * tileheight
-            frame = Rectangle(x=x, y=y, w=tilewidth, h=tileheight)
+            frame = Rectangle(x, y, tilewidth, tileheight)
             tile = TilesetTile(type="", frame=frame)
             tiles.append(tile)
 

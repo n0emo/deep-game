@@ -82,7 +82,7 @@ audio_system_handle_event :: proc(a: ^Audio_System, event: Event) {
 	case Event_Fight_Deflect_Success:
 		play_sound(a, a.assets.fx_deflect)
 	case Event_Fight_Enemy_Dead:
-		// play_sound(a, a.assets.fx_death)
+		play_sound(a, a.assets.fx_death)
 		switch_music(a, &a.assets.jingle_win, loop = false)
 	case Event_End_Transitioning:
 		play_sound(a, a.assets.fx_fall)
