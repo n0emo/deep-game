@@ -1,7 +1,4 @@
-﻿using System.Numerics;
-using Raylib_cs;
-
-namespace LastShot.Game;
+﻿namespace LastShot.Game;
 
 public sealed class Game
 {
