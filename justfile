@@ -6,24 +6,21 @@ ext := if os_family() == "windows" { "bat" } else { "sh" }
 @default:
     just --list --unsorted
 
-prepare:
-    odinfmt source -w
-    just hot-reload
-    just build-debug
-    just build-release
-    just build-web
+prepare: publish-desktop publish-web
 
-build-debug:
-    ./scripts/build_debug.{{ ext }}
+run:
+    dotnet watch --project LastShot.Desktop
 
-build-release:
-    ./scripts/build_release.{{ ext }}
+publish-desktop:
+    dotnet publish -c Release LastShot.Desktop
 
-hot-reload:
-    ./scripts/build_hot_reload.{{ ext }}
+publish-web:
+    dotnet publish -c Release LastShot.Web
 
-hot-reload-watch:
-    watchexec -w source './scripts/build_hot_reload.{{ ext }}'
-
-build-web:
-    ./scripts/build_web.{{ ext }}
+serve: publish-web
+    dotnet serve \
+        --port 8000 \
+        --mime .wasm=application/wasm \
+        --mime .js=text/javascript \
+        --mime .json=application/json \
+        --directory 'LastShot.Web/bin/Release/net10.0/browser-wasm/AppBundle/'

@@ -9,3 +9,6 @@ raylib.dll
 linux/**
 .sync*
 .DS_Store
+
+obj/
+bin/
