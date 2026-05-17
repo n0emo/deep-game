@@ -12,7 +12,11 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <PackageReference Include="Raylib-cs" Version="7.0.2"/>
+        <PackageReference Include="Raylib-cs" Version="7.0.2" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\Tiled\Tiled.csproj" />
     </ItemGroup>
 
 </Project>
