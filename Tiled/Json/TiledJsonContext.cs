@@ -6,8 +6,8 @@ namespace Tiled.Json;
 [JsonSerializable(typeof(TilesetDescriptor))]
 internal partial class TiledJsonContext : JsonSerializerContext
 {
-    public static JsonSerializerOptions SerializerOptions => new JsonSerializerOptions
+    public static JsonSerializerOptions SerializerOptions => new()
     {
-        TypeInfoResolver = TiledJsonContext.Default,
+        TypeInfoResolver = Default
     };
 }

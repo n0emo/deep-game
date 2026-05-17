@@ -1,3 +1,6 @@
+using Tiled;
+using Object = Tiled.Object;
+
 namespace LastShot.Game;
 
 public record MapObject(
@@ -8,23 +11,32 @@ public record MapObject(
     float Height
 )
 {
-    static MapObject FromTiledObject(Tiled.Object obj)
+    private static MapObject FromTiledObject(Object obj)
     {
-        throw new NotImplementedException();
+        return obj.Type switch
+        {
+            "spawnpoint" => SpawnpointObject.FromTiledObject(obj),
+            "transition" => TransitionObject.FromTiledObject(obj),
+            "enemy" => EnemyObject.FromTiledObject(obj),
+            _ => throw new ArgumentException($"Unknown object type: {obj.Type}")
+        };
     }
 }
 
 public record SpawnpointObject(
     int Id,
     float X,
-    float Y,
-    float Width,
-    float Height
-) : MapObject(Id, X, Y, Width, Height)
+    float Y
+) : MapObject(Id, X, Y, 0, 0)
 {
-    static SpawnpointObject FromTiledObject(Tiled.Object obj)
+    public static SpawnpointObject FromTiledObject(Object obj)
     {
-        throw new NotImplementedException();
+        return new SpawnpointObject
+        (
+            obj.Id,
+            obj.X,
+            obj.Y
+        );
     }
 }
 
@@ -36,9 +48,16 @@ public record TransitionObject(
     float Height
 ) : MapObject(Id, X, Y, Width, Height)
 {
-    static TransitionObject FromTiledObject(Tiled.Object obj)
+    public static TransitionObject FromTiledObject(Object obj)
     {
-        throw new NotImplementedException();
+        return new TransitionObject
+        (
+            obj.Id,
+            obj.X,
+            obj.Y,
+            obj.Width,
+            obj.Height
+        );
     }
 }
 
@@ -52,8 +71,17 @@ public record EnemyObject(
     string Name
 ) : MapObject(Id, X, Y, Width, Height)
 {
-    static EnemyObject FromTiledObject(Tiled.Object obj)
+    public static EnemyObject FromTiledObject(Object obj)
     {
-        throw new NotImplementedException();
+        return new EnemyObject
+        (
+            obj.Id,
+            obj.X,
+            obj.Y,
+            obj.Width,
+            obj.Height,
+            ((ObjectPropertyInt)obj.Properties["hp"]).Int,
+            ((ObjectPropertyString)obj.Properties["enemy_name"]).String
+        );
     }
 }

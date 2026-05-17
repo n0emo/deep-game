@@ -7,7 +7,7 @@ public sealed class Game
     private Music _music;
     private bool _running;
     private Texture2D _texture;
-    private Tiled.Loader _tiledLoader;
+    private Loader _tiledLoader;
 
     public bool Running
     {
@@ -30,7 +30,7 @@ public sealed class Game
         Raylib.SetAudioStreamBufferSizeDefault(4096);
         Raylib.SetTargetFPS(60);
 
-        _tiledLoader = new Tiled.Loader("assets");
+        _tiledLoader = new Loader("assets");
         var tileset = _tiledLoader.LoadTileset("tilesets/steampunk.tsj");
         Console.WriteLine(tileset);
 

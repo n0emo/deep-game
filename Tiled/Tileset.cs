@@ -12,7 +12,10 @@ public record struct Tileset(
     int Spacing
 )
 {
-    TilesetTile? GetTile(int id) => Tiles.Length >= id ? null : Tiles[id];
+    private TilesetTile? GetTile(int id)
+    {
+        return Tiles.Length >= id ? null : Tiles[id];
+    }
 }
 
 public record struct TilesetTile(string? Type, Frame Frame);

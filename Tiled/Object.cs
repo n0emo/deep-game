@@ -13,8 +13,8 @@ public record Object(
     bool Point,
     int Rotation,
     string Type,
-    bool visible,
-    ImmutableDictionary<string, ObjectProperty> properties
+    bool Visible,
+    ImmutableDictionary<string, ObjectProperty> Properties
 );
 
 public record ObjectProperty;

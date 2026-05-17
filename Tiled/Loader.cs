@@ -1,13 +1,10 @@
 using System.Collections.Immutable;
+using Tiled.Json;
 
 namespace Tiled;
 
 public class Loader
 {
-    public string BasePath { get; init; }
-    public ImmutableDictionary<string, Tileset> Tilesets { get; private set; }
-    public ImmutableDictionary<string, Tilemap> Tilemaps { get; private set; }
-
     public Loader(string basePath)
     {
         BasePath = basePath;
@@ -15,21 +12,22 @@ public class Loader
         Tilemaps = ImmutableDictionary<string, Tilemap>.Empty;
     }
 
+    public string BasePath { get; init; }
+    public ImmutableDictionary<string, Tileset> Tilesets { get; private set; }
+    public ImmutableDictionary<string, Tilemap> Tilemaps { get; private set; }
+
     public Tileset LoadTileset(string path)
     {
         path = Path.Join(BasePath, path);
 
-        if (!Path.HasExtension(path))
-        {
-            throw new MissingExtension(path);
-        }
+        if (!Path.HasExtension(path)) throw new MissingExtension(path);
 
         var ext = Path.GetExtension(path);
         return ext switch
         {
-            ".tsj" => Tiled.Json.TilesetJsonExtensions.FromJson(File.ReadAllText(path)),
+            ".tsj" => TilesetJsonExtensions.FromJson(File.ReadAllText(path)),
             ".tsx" => throw new NotImplementedException(),
-            _ => throw new UnknownFileExtension(path, ext),
+            _ => throw new UnknownFileExtension(path, ext)
         };
     }
 
@@ -37,17 +35,14 @@ public class Loader
     {
         path = Path.Join(BasePath, path);
 
-        if (!Path.HasExtension(path))
-        {
-            throw new MissingExtension(path);
-        }
+        if (!Path.HasExtension(path)) throw new MissingExtension(path);
 
         var ext = Path.GetExtension(path);
         return ext switch
         {
             ".tmj" => throw new NotImplementedException(),
             ".tmx" => throw new NotImplementedException(),
-            _ => throw new UnknownFileExtension(path, ext),
+            _ => throw new UnknownFileExtension(path, ext)
         };
     }
 }
@@ -56,7 +51,7 @@ public class TiledException : Exception;
 
 public class MissingExtension : TiledException
 {
-    private string _path;
+    private readonly string _path;
 
     public MissingExtension(string path)
     {
@@ -68,8 +63,8 @@ public class MissingExtension : TiledException
 
 public class UnknownFileExtension : TiledException
 {
-    private string _path;
-    private string _ext;
+    private readonly string _ext;
+    private readonly string _path;
 
     public UnknownFileExtension(string path, string ext)
     {
